@@ -26,3 +26,4 @@ class MonthlyReportResponse(BaseModel):
     total_employees: int
     average_attendance_rate: float
     summaries: List[EmployeeMonthlySummary]
+

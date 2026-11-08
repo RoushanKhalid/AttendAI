@@ -185,3 +185,4 @@ def delete_leave(
     db.delete(leave)
     db.commit()
     return {"success": True, "message": "Leave request deleted successfully"}
+

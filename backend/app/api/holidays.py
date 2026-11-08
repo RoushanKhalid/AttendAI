@@ -109,3 +109,4 @@ def delete_holiday(
     db.delete(hol)
     db.commit()
     return {"success": True, "message": f"Holiday '{hol.name}' deleted successfully"}
+

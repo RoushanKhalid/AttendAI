@@ -50,3 +50,4 @@ def test_monthly_summary_and_csv_export():
     assert "Total Work (Hours)" in csv_content
     assert "Overtime (Hours)" in csv_content
     assert "Status" in csv_content
+

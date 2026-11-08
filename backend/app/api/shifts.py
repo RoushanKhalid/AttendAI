@@ -133,3 +133,4 @@ def delete_shift(
     db.delete(shift)
     db.commit()
     return {"success": True, "message": f"Shift '{shift.name}' deleted successfully"}
+

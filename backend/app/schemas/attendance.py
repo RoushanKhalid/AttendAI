@@ -71,3 +71,37 @@ class DashboardSummaryOut(BaseModel):
     attendance_percentage: float
     department_stats: List[Dict[str, Any]]
     recent_punches: List[AttendanceLogOut]
+
+
+class AttendanceRegularizationRequest(BaseModel):
+    employee_id: str
+    attendance_date: date
+    check_in_time: Optional[datetime] = None
+    check_out_time: Optional[datetime] = None
+    status: Optional[str] = "PRESENT"
+    reason: str
+
+
+class AttendanceRegularizationResponse(BaseModel):
+    success: bool
+    message: str
+    daily_attendance: DailyAttendanceOut
+    audit_log_id: str
+
+
+class AuditLogOut(BaseModel):
+    id: str
+    user_id: Optional[str] = None
+    username: Optional[str] = None
+    action: str
+    entity_name: str
+    entity_id: Optional[str] = None
+    old_values: Optional[Dict[str, Any]] = None
+    new_values: Optional[Dict[str, Any]] = None
+    ip_address: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+

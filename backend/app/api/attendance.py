@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -9,11 +9,13 @@ from app.api.deps import get_current_admin
 from app.models import (
     Employee, FaceTemplate, AttendanceLog, DailyAttendance, Shift, Department, User
 )
+from app.models.user import AuditLog
 from app.cv.service import cv_service
 from app.services.attendance_engine import attendance_engine
 from app.schemas.attendance import (
     AttendancePunchRequest, AttendancePunchResponse,
-    AttendanceLogOut, DailyAttendanceOut
+    AttendanceLogOut, DailyAttendanceOut,
+    AttendanceRegularizationRequest, AttendanceRegularizationResponse, AuditLogOut
 )
 from app.schemas.face import FaceRecognitionRequest, FaceRecognitionResponse, RecognitionDetectionOut
 
@@ -225,3 +227,168 @@ def get_daily_attendance(
             regularization_status=daily.regularization_status
         ))
     return items
+
+
+@router.post("/regularize", response_model=AttendanceRegularizationResponse)
+def regularize_attendance(
+    payload: AttendanceRegularizationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """
+    Administrator / HR Attendance Regularization Endpoint:
+    Allows authorized managers to manually adjust check-in/out times or status
+    with mandatory audit trail logging and work minute recalculation.
+    """
+    emp = db.query(Employee).filter(Employee.id == payload.employee_id).first()
+    if not emp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Employee with ID {payload.employee_id} not found"
+        )
+
+    # 1. Fetch or create DailyAttendance record
+    daily = db.query(DailyAttendance).filter(
+        DailyAttendance.employee_id == payload.employee_id,
+        DailyAttendance.attendance_date == payload.attendance_date
+    ).first()
+
+    old_values = {}
+    if daily:
+        old_values = {
+            "check_in_time": daily.check_in_time.isoformat() if daily.check_in_time else None,
+            "check_out_time": daily.check_out_time.isoformat() if daily.check_out_time else None,
+            "status": daily.status,
+            "late_minutes": daily.late_minutes,
+            "total_work_minutes": daily.total_work_minutes,
+            "overtime_minutes": daily.overtime_minutes,
+            "regularization_status": daily.regularization_status
+        }
+    else:
+        daily = DailyAttendance(
+            employee_id=emp.id,
+            shift_id=emp.default_shift_id,
+            attendance_date=payload.attendance_date,
+            status="ABSENT"
+        )
+        db.add(daily)
+        db.flush()
+
+    # 2. Update times if specified
+    if payload.check_in_time:
+        daily.check_in_time = payload.check_in_time
+    if payload.check_out_time:
+        daily.check_out_time = payload.check_out_time
+    if payload.status:
+        daily.status = payload.status
+
+    # 3. Recalculate duration & shift metrics
+    shift = db.query(Shift).filter(Shift.id == daily.shift_id).first() or emp.default_shift
+    if daily.check_in_time and daily.check_out_time and daily.check_out_time > daily.check_in_time:
+        total_duration = int((daily.check_out_time - daily.check_in_time).total_seconds() / 60)
+        daily.total_work_minutes = max(0, total_duration - (shift.break_duration_mins if shift else 60))
+        
+        # Calculate standard expected shift duration
+        if shift:
+            shift_start_dt = datetime.combine(daily.attendance_date, shift.start_time)
+            shift_end_dt = datetime.combine(daily.attendance_date, shift.end_time)
+            if shift.is_overnight and shift_end_dt <= shift_start_dt:
+                shift_end_dt += timedelta(days=1)
+            standard_shift_mins = int((shift_end_dt - shift_start_dt).total_seconds() / 60) - shift.break_duration_mins
+            daily.overtime_minutes = max(0, daily.total_work_minutes - standard_shift_mins)
+            
+            # Late arrival calculation
+            grace_dt = shift_start_dt + timedelta(minutes=shift.grace_period_mins)
+            if daily.check_in_time > grace_dt:
+                daily.late_minutes = int((daily.check_in_time - shift_start_dt).total_seconds() / 60)
+            else:
+                daily.late_minutes = 0
+
+    daily.regularization_status = "APPROVED"
+    daily.remarks = f"Regularized by {admin.username}: {payload.reason}"
+
+    new_values = {
+        "check_in_time": daily.check_in_time.isoformat() if daily.check_in_time else None,
+        "check_out_time": daily.check_out_time.isoformat() if daily.check_out_time else None,
+        "status": daily.status,
+        "late_minutes": daily.late_minutes,
+        "total_work_minutes": daily.total_work_minutes,
+        "overtime_minutes": daily.overtime_minutes,
+        "regularization_status": daily.regularization_status,
+        "reason": payload.reason
+    }
+
+    # 4. Write immutable Audit Log
+    audit_entry = AuditLog(
+        user_id=admin.id,
+        action="ATTENDANCE_REGULARIZATION",
+        entity_name="DailyAttendance",
+        entity_id=daily.id,
+        old_values=old_values,
+        new_values=new_values
+    )
+    db.add(audit_entry)
+    db.commit()
+    db.refresh(daily)
+    db.refresh(audit_entry)
+
+    dept = emp.department
+
+    daily_out = DailyAttendanceOut(
+        id=daily.id,
+        employee_id=emp.id,
+        employee_name=emp.full_name,
+        employee_code=emp.employee_code,
+        department_name=dept.name if dept else None,
+        attendance_date=daily.attendance_date,
+        check_in_time=daily.check_in_time,
+        check_out_time=daily.check_out_time,
+        late_minutes=daily.late_minutes,
+        early_departure_minutes=daily.early_departure_minutes,
+        total_work_minutes=daily.total_work_minutes,
+        overtime_minutes=daily.overtime_minutes,
+        status=daily.status,
+        regularization_status=daily.regularization_status
+    )
+
+    return AttendanceRegularizationResponse(
+        success=True,
+        message=f"Attendance record for {emp.full_name} regularized successfully",
+        daily_attendance=daily_out,
+        audit_log_id=audit_entry.id
+    )
+
+
+@router.get("/audit-logs", response_model=List[AuditLogOut])
+def get_audit_logs(
+    action: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """Retrieve immutable audit history of manual overrides and adjustments."""
+    query = (
+        db.query(AuditLog, User)
+        .outerjoin(User, AuditLog.user_id == User.id)
+    )
+    if action:
+        query = query.filter(AuditLog.action == action)
+
+    records = query.order_by(desc(AuditLog.created_at)).offset(skip).limit(limit).all()
+
+    logs = []
+    for audit, user in records:
+        logs.append(AuditLogOut(
+            id=audit.id,
+            user_id=audit.user_id,
+            username=user.username if user else "System",
+            action=audit.action,
+            entity_name=audit.entity_name,
+            entity_id=audit.entity_id,
+            old_values=audit.old_values,
+            new_values=audit.new_values,
+            ip_address=audit.ip_address,
+            created_at=audit.created_at
+        ))
+    return logs

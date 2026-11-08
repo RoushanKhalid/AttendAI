@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -26,6 +26,8 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
+*.db
+attendance_dev.db
 
 # Node.js & Next.js
 node_modules/
@@ -42,13 +44,17 @@ pnpm-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+backend/.env
 
-# Large Model Weights & Data (download via setup script)
-models/*.onnx
-models/*.pt
-models/*.tflite
-models/*.bin
-!models/.gitkeep
+# Large Model Weights & Data (download via automated setup / on-demand)
+*.onnx
+*.task
+*.tflite
+*.pt
+*.bin
+models/*
+backend/models/*
+!backend/models/.gitkeep
 data/
 datasets/
 recordings/

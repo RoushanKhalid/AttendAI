@@ -24,3 +24,4 @@ if ($stopped -eq 0) {
 } else {
     Write-Host "All services stopped successfully." -ForegroundColor Green
 }
+

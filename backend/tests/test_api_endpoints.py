@@ -119,6 +119,13 @@ def test_employee_management_lifecycle():
 
 
 def test_face_quality_and_enrollment_and_attendance():
+    # Clean up prior test templates to prevent ambiguity collision with synthetic images
+    from app.models.biometric import FaceTemplate
+    db_clean = SessionLocal()
+    db_clean.query(FaceTemplate).update({"is_active": False})
+    db_clean.commit()
+    db_clean.close()
+
     token = get_admin_token()
     headers = {"Authorization": f"Bearer {token}"}
 

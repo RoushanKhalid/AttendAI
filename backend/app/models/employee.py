@@ -91,6 +91,7 @@ class Employee(Base):
     default_shift = relationship("Shift", back_populates="employees")
     user_account = relationship("User", back_populates="employee", uselist=False)
     face_templates = relationship("FaceTemplate", back_populates="employee", cascade="all, delete-orphan")
+    biometric_consents = relationship("BiometricConsent", back_populates="employee", cascade="all, delete-orphan")
     attendance_logs = relationship("AttendanceLog", back_populates="employee", cascade="all, delete-orphan")
     daily_attendances = relationship("DailyAttendance", back_populates="employee", cascade="all, delete-orphan")
     leave_requests = relationship("LeaveRequest", back_populates="employee", cascade="all, delete-orphan")

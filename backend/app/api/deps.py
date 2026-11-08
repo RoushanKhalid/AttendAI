@@ -9,6 +9,7 @@ from app.core.security import decode_token
 from app.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
 
 
 def get_current_user(
@@ -45,4 +46,19 @@ def get_current_admin(
             detail="The user does not have administrative privileges"
         )
     return current_user
+
+
+def get_optional_admin(
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(oauth2_scheme_optional)
+) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        if payload and payload.get("sub"):
+            return db.query(User).filter(User.id == payload["sub"]).first()
+    except Exception:
+        pass
+    return None
 

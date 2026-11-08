@@ -120,3 +120,4 @@ Write-Host "====================================================================
 Write-Host "   * Backend and Frontend consoles are running in the background." -ForegroundColor Gray
 Write-Host "   * Close their respective windows to stop the servers." -ForegroundColor Gray
 Write-Host ""
+

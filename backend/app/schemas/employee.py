@@ -99,3 +99,20 @@ class EmployeeOut(BaseModel):
     class Config:
         from_attributes = True
 
+
+class QuickRegisterRequest(BaseModel):
+    first_name: str
+    last_name: str
+    employee_code: Optional[str] = None
+    email: Optional[EmailStr] = None
+    designation: Optional[str] = "Staff"
+    department_id: Optional[str] = None
+    branch_id: Optional[str] = None
+    default_shift_id: Optional[str] = None
+    face_image: str  # Base64 camera snapshot
+
+
+class QuickRegisterResponse(BaseModel):
+    success: bool
+    message: str
+    employee: EmployeeOut

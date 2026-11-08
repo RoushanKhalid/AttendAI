@@ -25,7 +25,8 @@ import {
   Volume2,
   Trash2,
   Check,
-  X
+  X,
+  Sparkles
 } from "lucide-react";
 import {
   api,
@@ -188,7 +189,23 @@ export default function Home() {
     reason: ""
   });
 
+  // Quick Register & Instant Face Enrollment State
+  const [showQuickRegisterModal, setShowQuickRegisterModal] = useState<boolean>(false);
+  const [quickRegForm, setQuickRegForm] = useState({
+    first_name: "",
+    last_name: "",
+    designation: "",
+    email: "",
+    department_id: "",
+    default_shift_id: "",
+  });
+  const [quickRegLoading, setQuickRegLoading] = useState<boolean>(false);
+  const [quickRegError, setQuickRegError] = useState<string>("");
+  const [quickRegSuccessBanner, setQuickRegSuccessBanner] = useState<string>("");
+
   // Video Refs
+  const quickVideoRef = useRef<HTMLVideoElement>(null);
+  const quickCanvasRef = useRef<HTMLCanvasElement>(null);
   const kioskVideoRef = useRef<HTMLVideoElement>(null);
   const kioskCanvasRef = useRef<HTMLCanvasElement>(null);
   const enrollVideoRef = useRef<HTMLVideoElement>(null);
@@ -394,6 +411,95 @@ export default function Home() {
       }
     } catch (e) {
       console.error("Recognition error:", e);
+    }
+  };
+
+  // Auto-start camera when navigating to kiosk tab
+  useEffect(() => {
+    if (activeTab === "kiosk") {
+      setIsKioskRunning(true);
+    }
+  }, [activeTab]);
+
+  // Quick Register Modal Camera Stream Lifecycle
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+
+    if (showQuickRegisterModal) {
+      setQuickRegError("");
+      navigator.mediaDevices
+        ?.getUserMedia({ video: { width: 640, height: 480 } })
+        .then((s) => {
+          stream = s;
+          if (quickVideoRef.current) {
+            quickVideoRef.current.srcObject = s;
+            quickVideoRef.current.play();
+          }
+        })
+        .catch((err) => {
+          console.error("Quick register camera error:", err);
+          setQuickRegError("Could not access webcam. Please verify camera permissions in your browser.");
+        });
+    }
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [showQuickRegisterModal]);
+
+  const handleQuickRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickVideoRef.current || !quickCanvasRef.current) return;
+    const video = quickVideoRef.current;
+    const canvas = quickCanvasRef.current;
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setQuickRegError("Camera frame not ready yet. Please wait 1 second and face the camera directly.");
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const faceImage = canvas.toDataURL("image/jpeg", 0.9);
+
+    setQuickRegLoading(true);
+    setQuickRegError("");
+
+    try {
+      const res = await api.quickRegister({
+        first_name: quickRegForm.first_name.trim(),
+        last_name: quickRegForm.last_name.trim(),
+        designation: quickRegForm.designation.trim() || undefined,
+        email: quickRegForm.email.trim() || undefined,
+        department_id: quickRegForm.department_id || (metadata.departments[0]?.id || undefined),
+        default_shift_id: quickRegForm.default_shift_id || (metadata.shifts[0]?.id || undefined),
+        face_image: faceImage,
+      });
+
+      setShowQuickRegisterModal(false);
+      setQuickRegLoading(false);
+      playKioskChime(true);
+      speakKioskGreeting(`Registered successfully, ${res.employee.first_name}! Face the camera to log attendance.`);
+      setQuickRegSuccessBanner(
+        `🎉 Registered ${res.employee.full_name} (${res.employee.employee_code})! Stand in front of the kiosk to record your attendance.`
+      );
+
+      // Immediately switch to Kiosk tab and ensure camera is running
+      setActiveTab("kiosk");
+      setIsKioskRunning(true);
+      loadEmployees();
+      loadDashboard();
+
+      setTimeout(() => {
+        setQuickRegSuccessBanner("");
+      }, 10000);
+    } catch (err: any) {
+      setQuickRegLoading(false);
+      setQuickRegError(err.message || "Face quality check failed. Ensure good lighting and look directly at the lens.");
     }
   };
 
@@ -822,53 +928,90 @@ export default function Home() {
 
         {/* ================= TAB 2: AI ATTENDANCE KIOSK ================= */}
         {activeTab === "kiosk" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Camera Viewport */}
-            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    <Camera className="w-5 h-5 text-blue-500" />
-                    AI Face Recognition Kiosk Terminal
-                  </h2>
-                  <p className="text-xs text-slate-400">Continuous video stream with multi-factor anti-spoofing</p>
+          <div className="space-y-4">
+            {/* Quick Register Success Celebration Banner */}
+            {quickRegSuccessBanner && (
+              <div className="p-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 rounded-2xl text-emerald-300 flex items-center justify-between shadow-lg animate-pulse">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-white">Enrollment Ready!</div>
+                    <div className="text-xs text-emerald-200">{quickRegSuccessBanner}</div>
+                  </div>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setAudioFeedbackEnabled(!audioFeedbackEnabled)}
-                    className={`p-2 rounded-lg border text-xs flex items-center gap-1 ${
-                      audioFeedbackEnabled
-                        ? "bg-blue-600/20 border-blue-500 text-blue-400"
-                        : "bg-slate-800 border-slate-700 text-slate-500"
-                    }`}
-                    title="Toggle Audio Feedback"
-                  >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
-
-                  <select
-                    value={attendanceMode}
-                    onChange={(e) => setAttendanceMode(e.target.value)}
-                    className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="AUTO">Auto Mode (First-in / Last-out)</option>
-                    <option value="CHECK_IN">Force Check-In</option>
-                    <option value="CHECK_OUT">Force Check-Out</option>
-                  </select>
-
-                  <button
-                    onClick={() => setIsKioskRunning(!isKioskRunning)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                      isKioskRunning
-                        ? "bg-rose-600 hover:bg-rose-500 text-white"
-                        : "bg-emerald-600 hover:bg-emerald-500 text-white"
-                    }`}
-                  >
-                    {isKioskRunning ? "Stop Kiosk" : "Start Kiosk"}
-                  </button>
-                </div>
+                <span className="text-[11px] bg-emerald-500/30 text-emerald-300 px-3 py-1 rounded-full font-mono">
+                  CAMERA ACTIVE
+                </span>
               </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Camera Viewport */}
+              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h2 className="text-base font-bold text-white flex items-center gap-2">
+                      <Camera className="w-5 h-5 text-blue-500" />
+                      AI Face Recognition Kiosk Terminal
+                    </h2>
+                    <p className="text-xs text-slate-400">Continuous video stream with multi-factor anti-spoofing</p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        setQuickRegForm({
+                          first_name: "",
+                          last_name: "",
+                          designation: "",
+                          email: "",
+                          department_id: metadata.departments[0]?.id || "",
+                          default_shift_id: metadata.shifts[0]?.id || "",
+                        });
+                        setShowQuickRegisterModal(true);
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center gap-1.5 shadow-md shadow-blue-500/20 transition transform active:scale-95"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+                      Quick Register Face
+                    </button>
+
+                    <button
+                      onClick={() => setAudioFeedbackEnabled(!audioFeedbackEnabled)}
+                      className={`p-2 rounded-lg border text-xs flex items-center gap-1 ${
+                        audioFeedbackEnabled
+                          ? "bg-blue-600/20 border-blue-500 text-blue-400"
+                          : "bg-slate-800 border-slate-700 text-slate-500"
+                      }`}
+                      title="Toggle Audio Feedback"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+
+                    <select
+                      value={attendanceMode}
+                      onChange={(e) => setAttendanceMode(e.target.value)}
+                      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="AUTO">Auto Mode (First-in / Last-out)</option>
+                      <option value="CHECK_IN">Force Check-In</option>
+                      <option value="CHECK_OUT">Force Check-Out</option>
+                    </select>
+
+                    <button
+                      onClick={() => setIsKioskRunning(!isKioskRunning)}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                        isKioskRunning
+                          ? "bg-rose-600 hover:bg-rose-500 text-white"
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                      }`}
+                    >
+                      {isKioskRunning ? "Stop Kiosk" : "Start Kiosk"}
+                    </button>
+                  </div>
+                </div>
 
               {/* Video Surface Container */}
               <div className="relative aspect-video bg-black rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
@@ -970,6 +1113,29 @@ export default function Home() {
                         </div>
                       </div>
                     )}
+
+                    {/* Unregistered face quick registration call-to-action */}
+                    {latestRecognition && !latestRecognition.is_matched && latestRecognition.is_live && (
+                      <div className="mt-3 p-3 bg-blue-950/40 border border-blue-800/60 rounded-xl space-y-2">
+                        <div className="text-[11px] text-blue-200">Face not enrolled in system yet:</div>
+                        <button
+                          onClick={() => {
+                            setQuickRegForm({
+                              first_name: "",
+                              last_name: "",
+                              designation: "",
+                              email: "",
+                              department_id: metadata.departments[0]?.id || "",
+                              default_shift_id: metadata.shifts[0]?.id || "",
+                            });
+                            setShowQuickRegisterModal(true);
+                          }}
+                          className="w-full py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 shadow"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" /> Quick Register Yourself in 5 Seconds
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -978,6 +1144,7 @@ export default function Home() {
                 </div>
               )}
             </div>
+          </div>
           </div>
         )}
 
@@ -1089,12 +1256,30 @@ export default function Home() {
                 <h1 className="text-xl font-bold text-white">Employee Directory</h1>
                 <p className="text-xs text-slate-400">Manage workforce profiles and shift assignments</p>
               </div>
-              <button
-                onClick={() => setShowAddEmpModal(true)}
-                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow"
-              >
-                <Plus className="w-4 h-4" /> Add Employee
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    setQuickRegForm({
+                      first_name: "",
+                      last_name: "",
+                      designation: "",
+                      email: "",
+                      department_id: metadata.departments[0]?.id || "",
+                      default_shift_id: metadata.shifts[0]?.id || "",
+                    });
+                    setShowQuickRegisterModal(true);
+                  }}
+                  className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow shadow-blue-500/20"
+                >
+                  <Sparkles className="w-4 h-4 text-blue-200" /> Quick Register Face
+                </button>
+                <button
+                  onClick={() => setShowAddEmpModal(true)}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-700"
+                >
+                  <Plus className="w-4 h-4" /> Standard Form
+                </button>
+              </div>
             </div>
 
             {/* Search Input */}
@@ -1121,6 +1306,7 @@ export default function Home() {
                     <th className="p-3">Shift</th>
                     <th className="p-3">Biometrics</th>
                     <th className="p-3">Status</th>
+                    <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -1152,6 +1338,44 @@ export default function Home() {
                         >
                           {emp.status}
                         </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        {emp.enrollment_status !== "ENROLLED" ? (
+                          <button
+                            onClick={() => {
+                              setQuickRegForm({
+                                first_name: emp.first_name,
+                                last_name: emp.last_name,
+                                designation: emp.designation || "",
+                                email: emp.email,
+                                department_id: emp.department?.id || "",
+                                default_shift_id: emp.default_shift?.id || "",
+                              });
+                              setShowQuickRegisterModal(true);
+                            }}
+                            className="px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded text-[11px] font-semibold inline-flex items-center gap-1 shadow"
+                          >
+                            <Sparkles className="w-3 h-3 text-blue-200" /> Enroll Face
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setQuickRegForm({
+                                first_name: emp.first_name,
+                                last_name: emp.last_name,
+                                designation: emp.designation || "",
+                                email: emp.email,
+                                department_id: emp.department?.id || "",
+                                default_shift_id: emp.default_shift?.id || "",
+                              });
+                              setShowQuickRegisterModal(true);
+                            }}
+                            className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-medium"
+                            title="Update Face Template"
+                          >
+                            Re-Enroll
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -2090,6 +2314,171 @@ export default function Home() {
                   className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow"
                 >
                   Sign In
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK REGISTER & FACE ENROLL MODAL */}
+      {showQuickRegisterModal && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-2xl w-full space-y-5 shadow-2xl relative overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    Instant Face Registration
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Snap face & auto-enroll in seconds. Then immediately face kiosk camera to punch in.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowQuickRegisterModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {quickRegError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{quickRegError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleQuickRegister} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+                {/* Live Webcam Surface with Face Frame */}
+                <div className="space-y-2">
+                  <div className="relative aspect-video md:aspect-[4/3] bg-black rounded-2xl overflow-hidden border border-slate-700 flex items-center justify-center shadow-inner">
+                    <video
+                      ref={quickVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover transform scale-x-[-1]"
+                    />
+                    <canvas ref={quickCanvasRef} className="hidden" />
+
+                    {/* Face alignment overlay reticle */}
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      <div className="w-44 h-56 border-2 border-dashed border-emerald-400/80 rounded-[45px] relative">
+                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-emerald-600/90 text-white text-[9px] font-bold rounded-full tracking-wider uppercase">
+                          Align Face Here
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-center text-slate-400">
+                    Look directly at the camera with clear lighting.
+                  </p>
+                </div>
+
+                {/* Form Inputs */}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">First Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. John"
+                        value={quickRegForm.first_name}
+                        onChange={(e) => setQuickRegForm({ ...quickRegForm, first_name: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Last Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Doe"
+                        value={quickRegForm.last_name}
+                        onChange={(e) => setQuickRegForm({ ...quickRegForm, last_name: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 block">Designation / Role</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Software Engineer"
+                      value={quickRegForm.designation}
+                      onChange={(e) => setQuickRegForm({ ...quickRegForm, designation: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 block">Email (Optional)</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. john@company.com"
+                      value={quickRegForm.email}
+                      onChange={(e) => setQuickRegForm({ ...quickRegForm, email: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Department</label>
+                      <select
+                        value={quickRegForm.department_id}
+                        onChange={(e) => setQuickRegForm({ ...quickRegForm, department_id: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:border-blue-500 outline-none"
+                      >
+                        {metadata.departments.map((d) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Shift Schedule</label>
+                      <select
+                        value={quickRegForm.default_shift_id}
+                        onChange={(e) => setQuickRegForm({ ...quickRegForm, default_shift_id: e.target.value })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 focus:border-blue-500 outline-none"
+                      >
+                        {metadata.shifts.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickRegisterModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={quickRegLoading}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-blue-500/30 flex items-center gap-2 transition disabled:opacity-50 transform active:scale-95"
+                >
+                  <Sparkles className={`w-4 h-4 ${quickRegLoading ? "animate-spin" : ""}`} />
+                  {quickRegLoading ? "Processing Biometrics..." : "Capture Face & Register Instantly"}
                 </button>
               </div>
             </form>

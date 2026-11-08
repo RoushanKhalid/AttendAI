@@ -349,6 +349,30 @@ class ApiClient {
     return res.json();
   }
 
+  async quickRegister(payload: {
+    first_name: string;
+    last_name: string;
+    employee_code?: string;
+    email?: string;
+    phone?: string;
+    designation?: string;
+    department_id?: string;
+    branch_id?: string;
+    default_shift_id?: string;
+    face_image: string;
+  }) {
+    const res = await fetch(`${API_BASE_URL}/employees/quick-register`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Quick registration failed");
+    }
+    return res.json();
+  }
+
   async enrollFace(employee_id: string, samples: string[]) {
     const res = await fetch(`${API_BASE_URL}/face/enroll`, {
       method: "POST",

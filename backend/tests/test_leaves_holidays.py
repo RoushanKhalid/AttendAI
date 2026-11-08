@@ -68,11 +68,13 @@ def test_leave_application_and_approval():
     shift_id = shift_res.json()[0]["id"]
 
     # 1. Register test employee for leave
+    import uuid
+    uid = uuid.uuid4().hex[:6]
     emp_payload = {
-        "employee_code": "EMP-LEAVE-01",
+        "employee_code": f"EMP-L-{uid}",
         "first_name": "Rahim",
         "last_name": "Uddin",
-        "email": "rahim.leave@company.com",
+        "email": f"rahim.{uid}@company.com",
         "designation": "QA Analyst",
         "department_id": dept_id,
         "branch_id": branch_id,

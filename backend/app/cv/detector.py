@@ -263,3 +263,4 @@ class FaceDetectorService:
 
 
 face_detector = FaceDetectorService()
+

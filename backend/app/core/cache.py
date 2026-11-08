@@ -81,3 +81,4 @@ class CacheManager:
 
 
 cache_manager = CacheManager()
+

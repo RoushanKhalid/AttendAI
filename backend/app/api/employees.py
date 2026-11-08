@@ -165,3 +165,4 @@ def create_department(payload: DepartmentCreate, db: Session = Depends(get_db), 
 @router.get("/meta/shifts", response_model=List[ShiftOut])
 def get_shifts(db: Session = Depends(get_db)):
     return db.query(Shift).all()
+

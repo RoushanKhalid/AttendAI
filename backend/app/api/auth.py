@@ -72,3 +72,4 @@ def change_password(
     current_user.password_hash = get_password_hash(payload.new_password)
     db.commit()
     return {"success": True, "message": "Password changed successfully"}
+

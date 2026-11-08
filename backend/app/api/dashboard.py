@@ -127,3 +127,4 @@ def get_dashboard_summary(
         department_stats=dept_stats,
         recent_punches=recent_punches
     )
+

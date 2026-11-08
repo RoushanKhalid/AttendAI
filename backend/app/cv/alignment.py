@@ -40,3 +40,4 @@ def align_face_112x112(image: np.ndarray, landmarks_5pt: np.ndarray) -> np.ndarr
         borderMode=cv2.BORDER_REFLECT_101
     )
     return aligned
+

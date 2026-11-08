@@ -5,3 +5,4 @@ Write-Host "===============================================" -ForegroundColor Cy
 Set-Location -Path "$PSScriptRoot\frontend"
 Write-Host "Running Next.js Dev Server on http://localhost:3000 ..." -ForegroundColor Green
 npm run dev
+

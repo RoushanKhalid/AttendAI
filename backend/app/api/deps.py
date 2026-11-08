@@ -45,3 +45,4 @@ def get_current_admin(
             detail="The user does not have administrative privileges"
         )
     return current_user
+

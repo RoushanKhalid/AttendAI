@@ -100,3 +100,4 @@ def test_anti_spoofing_evaluation():
     assert isinstance(is_live, bool)
     assert 0.0 <= score <= 1.0
     assert msg is not None
+

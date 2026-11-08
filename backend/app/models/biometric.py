@@ -22,3 +22,4 @@ class FaceTemplate(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     employee = relationship("Employee", back_populates="face_templates")
+

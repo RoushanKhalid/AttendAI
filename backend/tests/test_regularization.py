@@ -24,11 +24,13 @@ def test_attendance_regularization_and_audit():
     shifts = client.get("/api/v1/employees/meta/shifts", headers=headers).json()
 
     # 1. Create employee for regularization test
+    import uuid
+    uid = uuid.uuid4().hex[:6]
     emp_payload = {
-        "employee_code": "EMP-REG-01",
+        "employee_code": f"EMP-R-{uid}",
         "first_name": "Tariq",
         "last_name": "Mahmud",
-        "email": "tariq.reg@company.com",
+        "email": f"tariq.{uid}@company.com",
         "designation": "DevOps Engineer",
         "department_id": departments[0]["id"],
         "branch_id": branches[0]["id"],

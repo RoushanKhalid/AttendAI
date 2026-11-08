@@ -108,3 +108,4 @@ def get_enrollment_status(employee_id: str, db: Session = Depends(get_db)):
         "sample_count": active_template.sample_count if active_template else 0,
         "enrolled_at": active_template.created_at if active_template else None
     }
+

@@ -78,3 +78,4 @@ class Holiday(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     branch = relationship("Branch", back_populates="holidays")
+

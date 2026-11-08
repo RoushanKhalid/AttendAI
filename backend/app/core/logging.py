@@ -14,3 +14,4 @@ def setup_logging():
     logging.getLogger("absl").setLevel(logging.ERROR)
 
 logger = logging.getLogger("attendance_system")
+

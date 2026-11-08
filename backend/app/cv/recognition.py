@@ -131,7 +131,8 @@ class FaceRecognitionEngine:
         if q_norm > 1e-6:
             q = q / q_norm
 
-        scores = []
+        # Aggregate best score per unique employee to prevent self-ambiguity collisions
+        emp_best_scores: Dict[str, float] = {}
         for t in enrolled_templates:
             emp_id = t["employee_id"]
             vec = np.array(t["embedding"], dtype=np.float32)
@@ -141,10 +142,11 @@ class FaceRecognitionEngine:
             
             # Cosine similarity is dot product of normalized vectors
             sim = float(np.dot(q, vec))
-            scores.append((emp_id, sim))
+            if emp_id not in emp_best_scores or sim > emp_best_scores[emp_id]:
+                emp_best_scores[emp_id] = sim
 
         # Sort descending by similarity
-        scores.sort(key=lambda x: x[1], reverse=True)
+        scores = sorted(emp_best_scores.items(), key=lambda x: x[1], reverse=True)
 
         top1_emp_id, top1_score = scores[0]
         top2_score = scores[1][1] if len(scores) > 1 else 0.0

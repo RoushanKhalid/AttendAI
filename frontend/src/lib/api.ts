@@ -386,7 +386,12 @@ class ApiClient {
     return res.json();
   }
 
-  async recognizeAndRecord(imageBase64: string, attendance_mode: string = "AUTO", device_id: string = "webcam_kiosk") {
+  async recognizeAndRecord(
+    imageBase64: string,
+    attendance_mode: string = "AUTO",
+    device_id: string = "webcam_kiosk",
+    skip_liveness: boolean = false
+  ) {
     const res = await fetch(`${API_BASE_URL}/attendance/recognize-and-record`, {
       method: "POST",
       headers: this.getHeaders(),
@@ -394,7 +399,7 @@ class ApiClient {
         image: imageBase64,
         attendance_mode,
         device_id,
-        skip_liveness: false,
+        skip_liveness,
       }),
     });
     if (!res.ok) throw new Error("Recognition failed");

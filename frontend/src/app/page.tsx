@@ -171,6 +171,7 @@ export default function Home() {
   // Kiosk / Recognition State
   const [isKioskRunning, setIsKioskRunning] = useState<boolean>(false);
   const [attendanceMode, setAttendanceMode] = useState<string>("AUTO");
+  const [livenessMode, setLivenessMode] = useState<"standard" | "bypass">("standard");
   const [latestRecognition, setLatestRecognition] = useState<any>(null);
   const [recentPunchesFeed, setRecentPunchesFeed] = useState<any[]>([]);
   const [audioFeedbackEnabled, setAudioFeedbackEnabled] = useState<boolean>(true);
@@ -370,7 +371,7 @@ export default function Home() {
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [activeTab, isKioskRunning, attendanceMode]);
+  }, [activeTab, isKioskRunning, attendanceMode, livenessMode]);
 
   const processKioskFrame = async () => {
     if (!kioskVideoRef.current || !kioskCanvasRef.current) return;
@@ -387,7 +388,12 @@ export default function Home() {
     const frameBase64 = canvas.toDataURL("image/jpeg", 0.85);
 
     try {
-      const res = await api.recognizeAndRecord(frameBase64, attendanceMode);
+      const res = await api.recognizeAndRecord(
+        frameBase64,
+        attendanceMode,
+        "webcam_kiosk",
+        livenessMode === "bypass"
+      );
       if (res.detections && res.detections.length > 0) {
         const topDet = res.detections[0];
         setLatestRecognition({
@@ -1000,6 +1006,16 @@ export default function Home() {
                       <option value="CHECK_OUT">Force Check-Out</option>
                     </select>
 
+                    <select
+                      value={livenessMode}
+                      onChange={(e) => setLivenessMode(e.target.value as "standard" | "bypass")}
+                      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      title="Anti-Spoofing Liveness Mode"
+                    >
+                      <option value="standard">🛡️ Anti-Spoof: Active</option>
+                      <option value="bypass">⚡ Office / Bypass Mode</option>
+                    </select>
+
                     <button
                       onClick={() => setIsKioskRunning(!isKioskRunning)}
                       className={`px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
@@ -1076,15 +1092,32 @@ export default function Home() {
                           <span>Matched: {latestRecognition.employee_name}</span>
                         </>
                       ) : latestRecognition.is_live === false ? (
-                        <>
-                          <AlertCircle className="w-5 h-5 text-rose-400" />
-                          <span>Rejected: Presentation Attack Suspected</span>
-                        </>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center space-x-2">
+                            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                            <span>Liveness Gate: Potential Spoof or Lighting Glare</span>
+                          </div>
+                          <p className="text-[11px] text-rose-300/80 font-normal">
+                            Lighting reflection, monitor glow, or face angle flagged by anti-spoofing.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setLivenessMode("bypass")}
+                            className="mt-1 px-2.5 py-1 bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/50 text-rose-200 rounded text-[11px] font-semibold flex items-center gap-1 transition"
+                          >
+                            ⚡ Switch to Office / Bypass Mode
+                          </button>
+                        </div>
                       ) : (
-                        <>
-                          <AlertCircle className="w-5 h-5 text-amber-400" />
-                          <span>Unknown / Unregistered Individual</span>
-                        </>
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                            <span>Unknown / Unregistered Individual</span>
+                          </div>
+                          <div className="text-[11px] text-amber-300/80 font-normal">
+                            {latestRecognition.match_message || "Match score below recognition threshold (38%)."}
+                          </div>
+                        </div>
                       )}
                     </div>
 

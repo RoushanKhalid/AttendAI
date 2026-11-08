@@ -150,7 +150,7 @@ class ComputerVisionService:
             }
 
             if not is_live:
-                detection_entry["match_message"] = "Rejected: Presentation attack / Spoof suspected"
+                detection_entry["match_message"] = f"Rejected by Liveness Gate: {liveness_msg}"
                 detections.append(detection_entry)
                 continue
 

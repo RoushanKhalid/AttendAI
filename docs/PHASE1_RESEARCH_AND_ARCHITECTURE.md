@@ -236,11 +236,11 @@ sequenceDiagram
             Anti-->>Emp: Warning: "Liveness Check Failed"
         else Liveness Confirmed
             Edge->>Emb: 5-Point Affine Alignment (112x112) -> Extract 512D Vector
-            Emb->>DB: Vector Cosine Search (pgvector: <=> operator)
-            alt Cosine Similarity < 0.72 (Unknown Individual)
+            Emb->>DB: Vector Cosine Search (pgvector: <=> operator or NumPy dot product)
+            alt Cosine Similarity < Threshold (Unknown Individual: < 0.38 for SFace, < 0.72 for ArcFace)
                 DB-->>Edge: No Match Found (Distance > Threshold)
                 Edge-->>Emp: Visual Alert: "Unknown Face - Access Denied"
-            else Cosine Similarity >= 0.72 AND Margin Gap >= 0.10
+            else Cosine Similarity >= Threshold AND Margin Gap >= 0.08
                 DB-->>Edge: Identified: Employee ID #E-1042 (Score: 0.86)
                 Edge->>Bus: Check Duplicate Debounce (Key: emp:1042:last_punch)
                 alt Within Cooldown Window (e.g. < 60 seconds)
@@ -260,14 +260,19 @@ sequenceDiagram
 
 ### 3.2 Unknown Face Handling & Rejection Mechanics
 To guarantee that **unknown faces are never assigned to registered employees**:
-1. **Strict Cosine Similarity Threshold ($T_{\text{match}}$):**
-   - For 512D ArcFace embeddings, the threshold is configured strictly at $\ge 0.72$ (equivalent to an L2 distance $\le 0.75$).
-   - Any query returning a maximum similarity $< 0.72$ is immediately categorized as `UNKNOWN_PERSON`.
+1. **Calibrated Cosine Similarity Threshold ($T_{\text{match}}$):**
+   - **OpenCV SFace (SphereFace 128D):** Configured at $\ge 0.38$ (OpenCV Zoo official criterion: $\ge 0.363$). Under typical webcam lighting, same-individual cosine similarity ranges between $0.45$ and $0.95$, while different individuals stay below $0.25$.
+   - **ArcFace / InsightFace (512D):** Threshold configured at $\ge 0.72$ (equivalent to L2 distance $\le 0.75$).
+   - Any query returning a maximum similarity $< T_{\text{match}}$ is immediately categorized as `UNKNOWN_PERSON`.
 2. **Ambiguity Margin Gap Rule ($\Delta_{\text{margin}}$):**
-   - If the top match score is $S_1$ and the second-highest match is $S_2$, the system enforces:
-     $$\Delta = S_1 - S_2 \ge 0.10$$
-   - If $\Delta < 0.10$, the match is flagged as ambiguous (e.g., twins or very similar facial features) and requires secondary manual/PIN verification rather than silently making an incorrect assignment.
-3. **Audit of Unknown Encounters:**
+   - If the top match score is $S_1$ and the second-highest match for a *different employee* is $S_2$, the system enforces:
+     $$\Delta = S_1 - S_2 \ge 0.08$$
+   - If $\Delta < 0.08$ and $S_2 \ge T_{\text{match}}$, the match is flagged as ambiguous (e.g., twins, lookalikes, or duplicate enrollments of the same person) and verification is safely rejected to prevent false attribution.
+3. **Multi-Modal Anti-Spoofing Gate ($T_{\text{liveness}}$):**
+   - Evaluates presentation attack likelihood combining MiniFASNet V2 deep texture logits (standard $[0.0, 1.0]$ tensor scaling), high-frequency 2D FFT spectrum, multi-ethnic YCrCb skin chroma, and MediaPipe Eye Aspect Ratio (EAR).
+   - Calibrated default threshold: $0.45$.
+   - Offers an operator-selectable **Office / Bypass Mode** for controlled environments or webcams suffering from intense monitor glare.
+4. **Audit of Unknown Encounters:**
    - Unknown encounters do not create attendance logs. Optionally, a security event log is created with timestamp and device ID (without saving personal data).
 
 ### 3.3 Duplicate Punch Debouncing & Cooldown Strategy

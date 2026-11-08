@@ -119,11 +119,13 @@ def test_employee_management_lifecycle():
 
 
 def test_face_quality_and_enrollment_and_attendance():
-    # Clean up prior test templates to prevent ambiguity collision with synthetic images
+    # Clean up prior test templates for TEST-E01 to prevent ambiguity collision
     from app.models.biometric import FaceTemplate
     db_clean = SessionLocal()
-    db_clean.query(FaceTemplate).update({"is_active": False})
-    db_clean.commit()
+    test_emp = db_clean.query(Employee).filter(Employee.employee_code == "TEST-E01").first()
+    if test_emp:
+        db_clean.query(FaceTemplate).filter(FaceTemplate.employee_id == test_emp.id).delete()
+        db_clean.commit()
     db_clean.close()
 
     token = get_admin_token()
@@ -194,3 +196,12 @@ def test_face_quality_and_enrollment_and_attendance():
     assert dash_data["total_employees"] >= 1
     assert dash_data["present_today"] >= 1
     assert len(dash_data["recent_punches"]) >= 1
+
+    # 8. Clean up test employee artifacts
+    db_fin = SessionLocal()
+    db_fin.query(AttendanceLog).filter(AttendanceLog.employee_id == emp_id).delete(synchronize_session=False)
+    db_fin.query(DailyAttendance).filter(DailyAttendance.employee_id == emp_id).delete(synchronize_session=False)
+    db_fin.query(FaceTemplate).filter(FaceTemplate.employee_id == emp_id).delete(synchronize_session=False)
+    db_fin.query(Employee).filter(Employee.id == emp_id).delete(synchronize_session=False)
+    db_fin.commit()
+    db_fin.close()

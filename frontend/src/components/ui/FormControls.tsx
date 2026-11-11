@@ -37,16 +37,28 @@ export function Field({
 }
 
 const controlBase =
-  "w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 disabled:bg-slate-50 disabled:text-slate-500 transition-colors";
+  "bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 disabled:bg-slate-50 disabled:text-slate-500 transition-colors";
+
+const hasExplicitWidth = (cls?: string) => /\b(!?w-|flex-1)/.test(cls || "");
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => <input ref={ref} className={cn(controlBase, "h-9", className)} {...props} />
+  ({ className, ...props }, ref) => (
+    <input
+      ref={ref}
+      className={cn(controlBase, "h-9", !hasExplicitWidth(className) && "w-full", className)}
+      {...props}
+    />
+  )
 );
 Input.displayName = "Input";
 
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
   ({ className, children, ...props }, ref) => (
-    <select ref={ref} className={cn(controlBase, "h-9", className)} {...props}>
+    <select
+      ref={ref}
+      className={cn(controlBase, "h-9", !hasExplicitWidth(className) && "w-full", className)}
+      {...props}
+    >
       {children}
     </select>
   )
@@ -54,7 +66,13 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
 Select.displayName = "Select";
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  ({ className, ...props }, ref) => <textarea ref={ref} className={cn(controlBase, "py-2", className)} {...props} />
+  ({ className, ...props }, ref) => (
+    <textarea
+      ref={ref}
+      className={cn(controlBase, "py-2", !hasExplicitWidth(className) && "w-full", className)}
+      {...props}
+    />
+  )
 );
 Textarea.displayName = "Textarea";
 

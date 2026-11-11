@@ -1,138 +1,193 @@
-# AI Face Recognition Attendance Management System
+<div align="center">
 
-A high-performance, privacy-centric Employee Attendance Management System built with **MediaPipe**, **Deep Face Recognition (SFace / ArcFace ONNX)**, **MiniFASNet Liveness Detection**, **FastAPI**, **PostgreSQL**, and **Next.js 14**.
+# AttendAI — AI Face Recognition Attendance Platform
+
+**A modern, privacy-first workforce attendance, shift scheduling, leave, and live AI kiosk platform built with Next.js 14, FastAPI, MediaPipe, SFace ONNX, and MiniFASNet V2.**
+
+<p>
+  <img src="https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs" alt="Next.js 14" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/FastAPI-Python_3.11-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/MediaPipe-FaceLandmarker-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe" />
+  <img src="https://img.shields.io/badge/ONNX_Runtime-SFace_%2B_MiniFASNet-005CED?style=flat-square" alt="ONNX Runtime" />
+  <img src="https://img.shields.io/badge/PostgreSQL-17_%2F_SQLite-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+</p>
+
+[Live Screenshots](#-product-tour) • [Key Capabilities](#-key-capabilities) • [Architecture](#-ai--system-architecture) • [Quick Start](#-quick-start) • [Role Permissions](#-role-based-experiences) • [Testing](#-automated-test-suite)
+
+<br />
+
+<img src="docs/screenshots/02-dashboard.png" alt="AttendAI Main Dashboard" width="100%" />
+
+</div>
 
 ---
 
-## Architecture Overview
+## ✨ Why AttendAI?
 
-```Haskell
-                                      +------------------------------------+
-                                      |          Webcam Video Stream       |
-                                      +-----------------+------------------+
-                                                        |
-                                                        v
-+-------------------------------------------------------------------------------------------------------------------+
-| MediaPipe Tasks FaceLandmarker (478 3D Landmarks)                                                                 |
-| -> Head Pose Validation (Yaw/Pitch/Roll <= 15 deg)                                                                |
-| -> Blur Metric (Laplacian variance >= 100)                                                                        |
-| -> EAR Blink & Open Eyes Detection                                                                                |
-+-------------------------------------------------------+-----------------------------------------------------------+
-                                                        |
-                                                        v
-+-------------------------------------------------------------------------------------------------------------------+
-| 5-Point Affine Similarity Alignment (112x112 Normalized RGB Face Crop)                                            |
-+-------------------------------------------------------+-----------------------------------------------------------+
-                                                        |
-                                                        v
-+-------------------------------------------------------------------------------------------------------------------+
-| Multi-Modal Anti-Spoofing & Liveness Pipeline                                                                     |
-| -> MiniFASNet V2 ONNX Deep Texture Classifier (Standard [0.0, 1.0] Tensor Normalization)                          |
-| -> FFT High-Frequency Screen Pixel Grid / Moire Spectrum Analysis                                                 |
-| -> Multi-Ethnic YCrCb Chrominance Skin Color Reflection Verification                                              |
-| -> Eye Aspect Ratio (EAR) Live Blink / Eye Openness Geometry Check                                                |
-| -> Configurable Kiosk Operation: Shielded (Active Anti-Spoof) vs. Office/Testing Bypass                          |
-+-------------------------------------------------------+-----------------------------------------------------------+
-                                                        | (Pass: Liveness Score >= 0.45 or Office Bypass)
-                                                        v
-+-------------------------------------------------------------------------------------------------------------------+
-| Deep Face Recognition (OpenCV SFace / ArcFace ONNX)                                                               |
-| -> Unit L2-Normalized Feature Embedding Extraction (128D SFace SphereFace Vector)                                 |
-| -> Calibrated Vector Matching: Cosine Similarity >= 0.38 (SFace Spec: 0.363) with Ambiguity Gap >= 0.08           |
-+-------------------------------------------------------+-----------------------------------------------------------+
-                                                        |
-                                                        v
-+-------------------------------------------------------------------------------------------------------------------+
-| Attendance Rules, Debounce & Shift Engine                                                                         |
-| -> 60s Atomic Debounce Window (Redis TTL / In-Memory Cache)                                                        |
-| -> Shift Calculation (Day, Evening & Overnight Shifts, Grace Periods, Early Departure, Overtime)                   |
-| -> First-In / Last-Out Attendance State Resolution                                                                |
-| -> Leave & Holiday Calendar Integration (Auto ON_LEAVE / HOLIDAY status)                                          |
-+-------------------------------------------------------+-----------------------------------------------------------+
-                                                        |
-                                                        v
-+-------------------------------------------------------------------------------------------------------------------+
-| Compliance & Audit Trails                                                                                         |
-| -> Attendance Regularization & Manual Overrides with mandatory reason                                             |
-| -> Immutable Audit Logs (user, action, old/new diffs, timestamp)                                                  |
-| -> Statutory Reporting & CSV Export (Bangladesh Labour Act Form 9 / Japan APPI)                                   |
-+-------------------------------------------------------+-----------------------------------------------------------+
-                                                        |
-                                                        v
-                                       +----------------+-----------------+
-                                       |  PostgreSQL Database & Dashboard |
-                                       +----------------------------------+
+Most biometric attendance prototypes look like raw developer consoles—exposing thresholds, logs, and complicated workflows to HR teams and employees. **AttendAI** bridges enterprise AI computer vision with a calm, commercial-grade HR SaaS experience:
+
+- **Zero Learning Curve:** Clean light-neutral interface with plain-language statuses, predictable navigation, and zero technical jargon on employee-facing screens.
+- **Touchless Live Kiosk:** Dedicated full-screen camera terminal with live face framing, clear positioning guidance, instant photo/name check-in confirmation, and Web Audio + voice greetings.
+- **Privacy-First Biometrics:** Raw camera images are discarded immediately after enrollment—only unit L2-normalized mathematical vectors (`128D` SFace embeddings) are stored.
+- **Complete Workforce Operations:** End-to-end attendance tracking, shift & overnight rosters, leave approvals, side-by-side attendance regularization with audit trails, statutory CSV exports, and RBAC settings.
+
+---
+
+## 📸 Product Tour
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Touchless Live Kiosk</strong><br />
+      <sub>Guided oval framing, real-time positioning feedback, audio chime & voice greeting, and hidden supervisor settings.</sub>
+      <br /><br />
+      <img src="docs/screenshots/05-kiosk.png" alt="Live Attendance Kiosk" />
+    </td>
+    <td width="50%" align="center">
+      <strong>Sign In & Direct Kiosk Access</strong><br />
+      <sub>Clean authentication gate with instant terminal launch for lobby displays.</sub>
+      <br /><br />
+      <img src="docs/screenshots/01-login.png" alt="Login Page" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Attendance Management</strong><br />
+      <sub>Today's attendance, history, late arrivals, early departures, missing punches, and raw logs with inspect drawers.</sub>
+      <br /><br />
+      <img src="docs/screenshots/03-attendance.png" alt="Attendance Management" />
+    </td>
+    <td width="50%" align="center">
+      <strong>Employee Directory & Guided Face Setup</strong><br />
+      <sub>Multi-facet filters, 2-step onboarding, profile drawers, and 3-angle face capture.</sub>
+      <br /><br />
+      <img src="docs/screenshots/04-employees.png" alt="Employee Directory" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Shifts & Schedules</strong><br />
+      <sub>Day and overnight rosters, grace periods, break deductions, and staff shift assignments.</sub>
+      <br /><br />
+      <img src="docs/screenshots/06-shifts.png" alt="Shifts and Schedules" />
+    </td>
+    <td width="50%" align="center">
+      <strong>Leave Management & Holidays</strong><br />
+      <sub>Approval queues, YTD leave usage summaries, and branch-specific holiday calendars.</sub>
+      <br /><br />
+      <img src="docs/screenshots/07-leaves.png" alt="Leave Management" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <strong>Attendance Regularization</strong><br />
+      <sub>Side-by-side <em>Original Record vs. Requested Correction</em> diff cards with immutable audit logs.</sub>
+      <br /><br />
+      <img src="docs/screenshots/08-regularization.png" alt="Attendance Regularization" />
+    </td>
+    <td width="50%" align="center">
+      <strong>Reports & Statutory CSV Export</strong><br />
+      <sub>Daily, monthly, department comparison, punctuality, and overtime analytics with authenticated CSV export.</sub>
+      <br /><br />
+      <img src="docs/screenshots/09-reports.png" alt="Reports and Analytics" />
+    </td>
+  </tr>
+  <tr>
+    <td width="68%" align="center">
+      <strong>Organization, Users, Kiosk & Rules Settings</strong><br />
+      <sub>Role-gated administration for company branches, departments, user accounts, kiosk defaults, and rules.</sub>
+      <br /><br />
+      <img src="docs/screenshots/10-settings.png" alt="Settings" />
+    </td>
+    <td width="32%" align="center">
+      <strong>Mobile Responsive</strong><br />
+      <sub>Adaptive drawer navigation and touch-friendly cards.</sub>
+      <br /><br />
+      <img src="docs/screenshots/11-mobile-dashboard.png" alt="Mobile Dashboard" width="220" />
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🚀 Key Capabilities
+
+| Module | Highlights |
+| :--- | :--- |
+| **Main Dashboard** | Live KPIs (Total, Present, Absent, Late, On Leave, Attendance Rate), quick actions, department stacked bars, and live punch stream |
+| **Live Attendance Kiosk** | Continuous sequential camera loop, face alignment oval, instant confirmation card, 60s duplicate punch protection, audio/speech greetings, fullscreen mode, and supervisor config drawer |
+| **Attendance Hub** | Views for Today, History, Late Arrivals, Early Departures, Missing Punches, and Raw Check-In/Out Logs with slide-over inspection and CSV export |
+| **Employees & Face Setup** | Guided 2-step registration, quick 1-step camera register, profile drawer, edit drawer, status management, and 3-photo guided face enrollment with plain-language quality checks |
+| **Shifts & Schedules** | Create/edit day and overnight shifts, configure grace period, half-day cutoff, and break minutes, and assign employees directly |
+| **Leave Management** | Pending/Approved/Rejected workflows, automatic `ON_LEAVE` attendance sync, YTD leave days taken tracker, and branch holiday calendar |
+| **Regularization & Audit** | Missing punch queue, employee correction requests, side-by-side Original vs. Requested diffs, HR overrides, and tamper-evident audit logs |
+| **Reports & Analytics** | Daily, monthly, department comparison, late/absence, and overtime views plus statutory CSV downloads (Bangladesh Labour Act Form 9 / APPI) |
+| **Settings** | Organization profile, branches, departments, RBAC user/role management, persisted kiosk defaults, and attendance rule preferences |
+
+---
+
+## 🧠 AI & System Architecture
+
+```mermaid
+flowchart TD
+    Cam["Webcam Video Stream"] --> MP["MediaPipe FaceLandmarker (478 3D Landmarks)"]
+    MP --> Quality["Quality Gate (Head Pose <= 20 deg, Blur, Illumination, Size >= 120px)"]
+    Quality --> Align["5-Point Affine Similarity Alignment (112x112 RGB)"]
+    Quality --> Liveness["Multi-Modal Anti-Spoofing (MiniFASNet V2 ONNX + 2D FFT + YCrCb + EAR)"]
+    Liveness -->|"Score >= 0.45 or Relaxed Mode"| Embed["SFace ONNX Embedding Extraction (128D Unit Vector)"]
+    Align --> Embed
+    Embed --> Match["1:N Cosine Search (Threshold >= 0.38, Ambiguity Margin >= 0.08)"]
+    Match --> Debounce["60s Atomic Debounce (Redis / Thread-Safe In-Memory TTL)"]
+    Debounce --> Engine["Shift & Attendance Rules Engine (Day/Overnight, Grace, OT, Leaves)"]
+    Engine --> DB[("PostgreSQL 17 / SQLite Fallback")]
+    DB --> UI["Next.js 14 App Router SaaS UI"]
 ```
 
----
-
-## Enterprise Feature Suite
-
-1. **Enterprise Role-Based Access Control (RBAC):**
-
-   - JWT authentication (`HS256`) with salted bcrypt password hashing.
-   - Roles: `ADMIN`, `HR_MANAGER`, `LINE_MANAGER`, `EMPLOYEE`.
-2. **Workforce Management:**
-
-   - Full CRUD lifecycle with Organization, Branch, Department, and Shift assignments.
-   - Soft-delete and privacy retention compliance.
-3. **Webcam Face Enrollment Studio:**
-
-3. **Webcam Face Enrollment Studio & 1-Step Quick Register:**
-   - **Studio Enrollment:** Multi-angle guided capture (3 distinct poses) with real-time pose, blur, and lighting feedback.
-   - **Instant Quick Register:** 5-second single-snapshot auto-enrollment modal directly accessible from the Kiosk HUD.
-   - **Privacy First:** Raw camera images are immediately discarded; only 128D mathematical feature vectors are saved.
-4. **Live AI Attendance Kiosk:**
-
-   - Real-time continuous webcam processing with interactive targeting HUD.
-   - **Dual Anti-Spoofing Controls:**
-     - `Shielded (Active Anti-Spoof)`: Multi-modal defense combining MiniFASNet V2, FFT spectrum, and YCrCb chrominance.
-     - `Office / Testing Bypass Mode`: Disables liveness gate for testing or environments with strong monitor glare.
-   - Configurable punch modes: `Auto (First-in / Last-out)`, `Force Check-In`, `Force Check-Out`.
-   - 60-second atomic debounce preventing repeated duplicate punch records.
-   - **Interactive Audio Feedback:** Synthesized Web Audio chime + SpeechSynthesis voice greetings.
-5. **Shifts & Schedule Configuration:**
-
-   - Standard day shifts, evening rosters, and overnight cross-day shifts.
-   - Configurable grace periods, break times, and half-day thresholds.
-6. **Leave Management & Holiday Calendar:**
-
-   - Leave applications (Annual, Casual, Sick, Unpaid) with HR approval workflow.
-   - Approved leaves automatically update daily records to `ON_LEAVE`.
-   - Branch-specific official holiday scheduling.
-7. **Manual Regularization & Immutable Audit Logs:**
-
-   - Authorized adjustments for missing punches or maintenance periods.
-   - Automatic recalculation of work duration, overtime, and late minutes.
-   - Tamper-evident audit trail capturing actor, action, old values, and new values.
-8. **Statutory Reporting & One-Click CSV Export:**
-
-   - Monthly timesheets with per-employee working days, present, late, absent, work hours, overtime.
-   - Export format compatible with statutory registers (Bangladesh Labour Act 2006 Form 9 & Japan APPI).
+### Technology Stack
+- **Frontend:** Next.js 14 (App Router), React 18, TypeScript 5, Tailwind CSS 3.4, Lucide Icons, Web Audio API, SpeechSynthesis
+- **Backend:** FastAPI, Python 3.11, Pydantic V2, SQLAlchemy 2.0, JWT (`HS256`) + Bcrypt
+- **Computer Vision:** MediaPipe FaceLandmarker Tasks API, OpenCV 4.10 (`face_recognition_sface.onnx`), ONNX Runtime 1.20 (`minifasnet_v2.onnx`), NumPy
+- **Storage & Cache:** PostgreSQL 17 with automatic SQLite fallback (`attendance_dev.db`), Redis with thread-safe in-memory TTL fallback
 
 ---
 
-## Technology Stack
+## 🔐 Role-Based Experiences
 
-- **Backend:** FastAPI, Python 3.11, Uvicorn, Pydantic V2, SQLAlchemy 2.0.
-- **Computer Vision:** MediaPipe 1.2.2 (FaceLandmarker Tasks API), OpenCV 4.10, ONNX Runtime 1.20, NumPy.
-- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Lucide React, Web Audio API.
-- **Database:** PostgreSQL 17 (production) with automatic SQLite fallback (`attendance_dev.db`).
-- **Cache:** Redis with automatic thread-safe in-memory TTL dictionary fallback.
+| Role | Access Scope |
+| :--- | :--- |
+| **`ADMIN`** | Full organization, branches, departments, user accounts & roles, kiosk defaults, attendance rules, and all HR modules |
+| **`HR_MANAGER`** | Employee directory, face setup, shifts, attendance management, leave & regularization approvals, reports, and holiday calendar |
+| **`LINE_MANAGER`** | Team attendance, live kiosk, shift schedules, leave & regularization approvals, and team reports |
+| **`EMPLOYEE`** | Personal dashboard ("My Attendance Today"), personal attendance history, personal leave requests & holiday calendar, and missing-punch correction requests |
 
 ---
 
-## Quick Start Guide
+## ⚡ Quick Start
 
 ### Prerequisites
+- **Python 3.11+**
+- **Node.js 18+** & npm
+- **PostgreSQL 17** (optional — automatically falls back to SQLite if Postgres is unavailable)
+- **Webcam** (for Live Kiosk & Face Setup)
 
-- Python 3.11+
-- Node.js 18+ & npm
-- PostgreSQL 17 (or use automatic SQLite fallback)
-- Webcam (built-in or USB)
+### One-Command Startup (Windows PowerShell)
 
-### 1. Backend Setup
+```powershell
+# Start both Backend API (port 8000) and Frontend UI (port 3000)
+powershell -ExecutionPolicy Bypass -File .\start-all.ps1
 
+# Stop all services cleanly
+powershell -ExecutionPolicy Bypass -File .\stop-all.ps1
+```
+
+### Manual Setup
+
+<details>
+<summary>Expand manual backend & frontend setup instructions</summary>
+
+**1. Backend API**
 ```powershell
 cd backend
 pip install -r requirements.txt
@@ -140,98 +195,54 @@ python -c "from app.core.init_db import init_db; init_db()"
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-API Documentation live at: **http://localhost:8000/docs**
-
-### 2. Frontend Setup
-
+**2. Frontend UI**
 ```powershell
 cd frontend
 npm install
 npm run dev
 ```
 
-Dashboard live at: **http://localhost:3000**
+</details>
 
-### 3. Startup Scripts (Zero-Hassle & One-Click)
-
-From the project root:
-
-- **All-in-One Startup (Backend + Frontend together):**
-  ```powershell
-  powershell -ExecutionPolicy Bypass -File .\start-all.ps1
-  ```
-- **Stop All Running Services cleanly:**
-  ```powershell
-  powershell -ExecutionPolicy Bypass -File .\stop-all.ps1
-  ```
-- **Dedicated Individual Services:**
-  - **Backend Only:** `powershell -ExecutionPolicy Bypass -File .\start-backend.ps1`
-  - **Frontend Only:** `powershell -ExecutionPolicy Bypass -File .\start-frontend.ps1`
+### Default Endpoints & Credentials
+- **Web App:** `http://localhost:3000`
+- **Live Kiosk Terminal:** `http://localhost:3000/kiosk`
+- **API Docs (Swagger):** `http://127.0.0.1:8000/api/v1/docs`
+- **Default Admin Login:** `admin@company.com` / `admin123`
 
 ---
 
-## Default Admin Credentials
+## 🧪 Automated Test Suite
 
-- **Email:** `admin@company.com`
-- **Password:** `admin123`
-
----
-
-## Automated Test Suite
-
-Run the full automated test suite covering all 18 test cases across Computer Vision, Biometrics, Attendance Engine, Shifts, Regularization, and Reports:
+Run the complete automated backend test suite covering API endpoints, computer vision alignment/embeddings/anti-spoofing, security, shifts, leaves, holidays, quick registration, regularization, reports, settings, and role-based access control:
 
 ```powershell
 python -m pytest
 ```
 
-Expected result:
+**Test Coverage (21 tests across 9 suites):**
+- `test_api_endpoints.py` — Health checks, auth login, employee lifecycle, face enrollment & debounce
+- `test_computer_vision.py` — 112x112 alignment, L2 embedding normalization, cosine matching & anti-spoofing
+- `test_database_and_security.py` — Password hashing, JWT tokens, seeded entities, TTL debounce cache
+- `test_leaves_holidays.py` — Branch holiday calendar & leave approval attendance sync
+- `test_quick_register.py` — 1-step camera quick registration & instant kiosk recognition
+- `test_regularization.py` — Admin regularization & immutable audit log trail
+- `test_reports.py` — Monthly aggregation & statutory CSV export
+- `test_settings_and_requests.py` — Organization/settings APIs, correction request workflow & RBAC scoping
+- `test_shifts.py` — Day/evening/overnight shift CRUD & auto-overnight detection
 
-```
-backend/tests/test_api_endpoints.py ....                                 [ 22%]
-backend/tests/test_computer_vision.py ....                               [ 44%]
-backend/tests/test_database_and_security.py ....                         [ 66%]
-backend/tests/test_leaves_holidays.py ..                                 [ 77%]
-backend/tests/test_quick_register.py .                                   [ 83%]
-backend/tests/test_regularization.py .                                   [ 88%]
-backend/tests/test_reports.py .                                          [ 94%]
-backend/tests/test_shifts.py .                                           [100%]
-====================== 18 passed in 48.20s =======================
+Frontend static checks:
+```powershell
+cd frontend
+npx tsc --noEmit
+npm run lint
+npm run build
 ```
 
 ---
 
-## Diagnostics & Troubleshooting: "Why Can't I Be Identified?"
+## 🛠️ Kiosk Diagnostics & Calibration
 
-If an employee or user stands in front of the kiosk webcam and is not recognized, check the following diagnostic factors:
-
-### 1. Calibrated Cosine Similarity Threshold (OpenCV SFace)
-- **Model:** `face_recognition_sface_2021dec.onnx` (128D SphereFace embedding).
-- **OpenCV Official Specification:** A cosine similarity score $\ge 0.363$ indicates the same person.
-- **Configured Threshold:** `FACE_RECOGNITION_THRESHOLD=0.38` in `backend/.env`.
-- **Diagnostic Note:** If threshold was previously set to legacy `0.72`, live webcam captures under varied angles/lighting scoring between `0.45` and `0.65` were falsely classified as unknown faces. Ensure `FACE_RECOGNITION_THRESHOLD=0.38` in `.env`.
-
-### 2. Anti-Spoofing & Webcam Lighting (Liveness Gate)
-- On laptop webcams, bright monitor reflection or uneven ambient lighting can trigger false positive spoof rejections.
-- **Resolution:**
-  - Position yourself in a naturally illuminated area without strong backlight.
-  - In the Kiosk UI top navigation bar, toggle the Anti-Spoof dropdown from `🛡️ Anti-Spoof: Active` to `⚡ Office / Bypass Mode` for development or indoor testing.
-  - Or calibrate `LIVENESS_THRESHOLD=0.45` in `backend/.env`.
-
-### 3. Face Reticle & Head Alignment
-- MediaPipe requires:
-  - **Face Size:** Minimum 120 pixels (stand 50–80 cm from the camera so your face comfortably fills the green reticle).
-  - **Head Pose:** Face the camera directly ($\text{Yaw} \le 20^\circ$, $\text{Pitch} \le 18^\circ$).
-  - **Hold Steady:** Wait ~0.5 seconds for auto-focus to stabilize blur variance ($\ge 40$).
-
-### 4. Ambiguity Margin Gap & Duplicate Profiles
-- The recognition engine strictly enforces `FACE_AMBIGUITY_MARGIN=0.08`: if two distinct employee profiles in the database match the same face with nearly identical similarity ($\Delta < 0.08$), verification is safely rejected to prevent identity confusion.
-- **Resolution:** Verify that the employee does not have duplicate accounts registered with the same face.
-
-### 5. Biometric Template Verification in Database
-- Verify that the employee has an active biometric template:
-  ```powershell
-  python -c "from app.core.database import SessionLocal; from app.models import FaceTemplate, Employee; db = SessionLocal(); [print(f'{e.full_name} ({e.employee_code}) - active={t.is_active}') for t, e in db.query(FaceTemplate, Employee).join(Employee).all()]"
-  ```
-- If an employee shows `active=False`, re-enroll their face from the **Employees** tab or **Face Enrollment Studio**.
-```
+- **Unknown Face / Low Similarity:** OpenCV SFace uses `FACE_RECOGNITION_THRESHOLD=0.38` (`FACE_AMBIGUITY_MARGIN=0.08`) in `backend/.env`. Ensure the employee's face profile is set up under **Employees** and there are no duplicate accounts registered to the same face.
+- **Screen Glare / Harsh Backlight:** Open **Settings** on the Kiosk header bar and switch **Lighting Tolerance** to **Relaxed Lighting Mode** for bright monitor reflections or indoor test environments.
+- **Camera Positioning:** Stand 50–80 cm from the lens, keep head level within the guide oval, and wait ~0.5s for focus stabilization.

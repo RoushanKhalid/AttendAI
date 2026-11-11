@@ -95,7 +95,7 @@ export default function KioskPage() {
   const isMountedRef = useRef(true);
   const processingRef = useRef(false);
 
-  const [nowClock, setNowClock] = useState<Date>(new Date());
+  const [nowClock, setNowClock] = useState<Date | null>(null);
   const [cameraActive, setCameraActive] = useState(true);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState("");
@@ -125,6 +125,7 @@ export default function KioskPage() {
 
   useEffect(() => {
     isMountedRef.current = true;
+    setNowClock(new Date());
     const clockTimer = setInterval(() => setNowClock(new Date()), 1000);
     return () => {
       isMountedRef.current = false;
@@ -375,10 +376,14 @@ export default function KioskPage() {
         {/* Live Clock */}
         <div className="hidden md:flex flex-col items-center">
           <div className="text-lg font-semibold text-slate-900 tabular-nums leading-tight">
-            {nowClock.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}
+            {nowClock
+              ? nowClock.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })
+              : "—"}
           </div>
           <div className="text-[11px] text-slate-500">
-            {nowClock.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })}
+            {nowClock
+              ? nowClock.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })
+              : ""}
           </div>
         </div>
 

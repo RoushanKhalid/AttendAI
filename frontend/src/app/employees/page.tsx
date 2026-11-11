@@ -383,20 +383,20 @@ function EmployeesContent() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
                   <tr>
-                    <th className="px-4 py-3">Employee</th>
-                    <th className="px-4 py-3">Code</th>
-                    <th className="px-4 py-3">Department & Branch</th>
-                    <th className="px-4 py-3">Shift</th>
-                    <th className="px-4 py-3">Face Setup</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-3.5 py-3">Employee</th>
+                    <th className="px-3 py-3">Code</th>
+                    <th className="px-3 py-3">Department</th>
+                    <th className="px-3 py-3">Shift</th>
+                    <th className="px-3 py-3">Face Setup</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3.5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {paged.map((emp) => (
                     <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
+                      <td className="px-3.5 py-3 max-w-[240px]">
+                        <div className="flex items-center gap-2.5 min-w-0">
                           <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-700 font-semibold text-xs flex items-center justify-center shrink-0">
                             {getInitials(emp.full_name)}
                           </div>
@@ -415,55 +415,54 @@ function EmployeesContent() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-slate-600 whitespace-nowrap">
+                      <td className="px-3 py-3 font-mono text-slate-600 whitespace-nowrap">
                         {emp.employee_code}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="text-slate-900 font-medium">{emp.department?.name || "—"}</div>
-                        <div className="text-[11px] text-slate-500">{emp.branch?.name || "—"}</div>
+                      <td className="px-3 py-3 max-w-[160px]">
+                        <div className="text-slate-900 font-medium truncate">{emp.department?.name || "—"}</div>
+                        <div className="text-[11px] text-slate-500 truncate">{emp.branch?.name || "—"}</div>
                       </td>
-                      <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                      <td className="px-3 py-3 text-slate-700 whitespace-nowrap">
                         {emp.default_shift?.name || "—"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <StatusBadge status={emp.enrollment_status} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <StatusBadge status={emp.status} />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3.5 py-3 text-right whitespace-nowrap">
                         <div className="inline-flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="xs"
                             onClick={() => openProfile(emp)}
                             title="View Profile"
+                            aria-label={`View profile for ${emp.full_name}`}
                             icon={<Eye className="w-3.5 h-3.5" />}
-                          >
-                            View
-                          </Button>
+                          />
                           <Button
                             variant="ghost"
                             size="xs"
                             onClick={() => openEditDrawer(emp)}
                             title="Edit Details"
+                            aria-label={`Edit ${emp.full_name}`}
                             icon={<Edit3 className="w-3.5 h-3.5" />}
-                          >
-                            Edit
-                          </Button>
+                          />
                           <Button
                             variant={emp.enrollment_status === "ENROLLED" ? "outline" : "primary"}
                             size="xs"
                             onClick={() => setFaceModalEmp(emp)}
                             icon={<Camera className="w-3.5 h-3.5" />}
                           >
-                            {emp.enrollment_status === "ENROLLED" ? "Update Face" : "Set Up Face"}
+                            {emp.enrollment_status === "ENROLLED" ? "Face" : "Set Up Face"}
                           </Button>
                           <Button
                             variant="ghost"
                             size="xs"
                             onClick={() => setConfirmToggleEmp(emp)}
                             title={emp.status === "ACTIVE" ? "Deactivate" : "Reactivate"}
+                            aria-label={emp.status === "ACTIVE" ? `Deactivate ${emp.full_name}` : `Reactivate ${emp.full_name}`}
                             className={emp.status === "ACTIVE" ? "text-red-600 hover:bg-red-50" : "text-emerald-600 hover:bg-emerald-50"}
                             icon={
                               emp.status === "ACTIVE" ? (

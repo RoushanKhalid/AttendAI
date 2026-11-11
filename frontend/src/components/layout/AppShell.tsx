@@ -467,14 +467,14 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-xs text-slate-500 transition-colors sm:w-56 justify-between"
+              className="flex items-center gap-2 h-9 px-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100/80 text-xs text-slate-500 transition-colors sm:w-64 justify-between"
             >
               <span className="flex items-center gap-2 truncate">
                 <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="hidden sm:inline truncate">Search pages or people…</span>
                 <span className="sm:hidden">Search</span>
               </span>
-              <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono bg-white border border-slate-200 rounded text-slate-400">
+              <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono bg-white border border-slate-200 rounded text-slate-400 whitespace-nowrap shrink-0">
                 Ctrl K
               </kbd>
             </button>

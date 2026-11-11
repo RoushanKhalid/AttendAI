@@ -37,75 +37,94 @@ Most biometric attendance prototypes look like raw developer consoles—exposing
 
 ## 📸 Product Tour
 
+### Live AI Attendance Kiosk
+<p align="center">
+  <sub>Real-time face framing, plain-language positioning guidance, instant photo confirmation, and audio greetings.</sub>
+</p>
+<p align="center">
+  <img src="docs/screenshots/05-kiosk-live.png" alt="Live Attendance Kiosk" width="100%" />
+</p>
+
+### Workforce Operations (Desktop)
 <table>
   <tr>
-    <td width="50%" align="center">
-      <strong>Touchless Live Kiosk</strong><br />
-      <sub>Guided oval framing, real-time positioning feedback, audio chime & voice greeting, and hidden supervisor settings.</sub>
-      <br /><br />
-      <img src="docs/screenshots/05-kiosk-live.png" alt="Live Attendance Kiosk" />
-    </td>
-    <td width="50%" align="center">
-      <strong>Sign In & Direct Kiosk Access</strong><br />
-      <sub>Clean authentication gate with instant terminal launch for lobby displays.</sub>
-      <br /><br />
-      <img src="docs/screenshots/01-login.png" alt="Login Page" />
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
+    <td width="50%" valign="top" align="center">
       <strong>Attendance Management</strong><br />
-      <sub>Today's attendance, history, late arrivals, early departures, missing punches, and raw logs with inspect drawers.</sub>
+      <sub>Today's attendance, history, late/early tracking &amp; missing punches.</sub>
       <br /><br />
-      <img src="docs/screenshots/03-attendance.png" alt="Attendance Management" />
+      <img src="docs/screenshots/03-attendance.png" alt="Attendance Management" width="100%" />
     </td>
-    <td width="50%" align="center">
-      <strong>Employee Directory & Guided Face Setup</strong><br />
-      <sub>Multi-facet filters, 2-step onboarding, profile drawers, and 3-angle face capture.</sub>
+    <td width="50%" valign="top" align="center">
+      <strong>Employee Directory &amp; Face Setup</strong><br />
+      <sub>Multi-facet filters, 2-step onboarding &amp; 3-angle face capture.</sub>
       <br /><br />
-      <img src="docs/screenshots/04-employees.png" alt="Employee Directory" />
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <strong>Shifts & Schedules</strong><br />
-      <sub>Day and overnight rosters, grace periods, break deductions, and staff shift assignments.</sub>
-      <br /><br />
-      <img src="docs/screenshots/06-shifts.png" alt="Shifts and Schedules" />
-    </td>
-    <td width="50%" align="center">
-      <strong>Leave Management & Holidays</strong><br />
-      <sub>Approval queues, YTD leave usage summaries, and branch-specific holiday calendars.</sub>
-      <br /><br />
-      <img src="docs/screenshots/07-leaves.png" alt="Leave Management" />
+      <img src="docs/screenshots/04-employees.png" alt="Employee Directory" width="100%" />
     </td>
   </tr>
   <tr>
-    <td width="50%" align="center">
+    <td width="50%" valign="top" align="center">
+      <strong>Shifts &amp; Schedules</strong><br />
+      <sub>Day/overnight rosters, grace periods, breaks &amp; staff assignment.</sub>
+      <br /><br />
+      <img src="docs/screenshots/06-shifts.png" alt="Shifts and Schedules" width="100%" />
+    </td>
+    <td width="50%" valign="top" align="center">
+      <strong>Leave Management &amp; Holidays</strong><br />
+      <sub>Approval queues, YTD leave summaries &amp; branch holiday calendars.</sub>
+      <br /><br />
+      <img src="docs/screenshots/07-leaves.png" alt="Leave Management" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top" align="center">
       <strong>Attendance Regularization</strong><br />
-      <sub>Side-by-side <em>Original Record vs. Requested Correction</em> diff cards with immutable audit logs.</sub>
+      <sub>Side-by-side Original vs. Requested diffs &amp; immutable audit logs.</sub>
       <br /><br />
-      <img src="docs/screenshots/08-regularization.png" alt="Attendance Regularization" />
+      <img src="docs/screenshots/08-regularization.png" alt="Attendance Regularization" width="100%" />
     </td>
-    <td width="50%" align="center">
-      <strong>Reports & Statutory CSV Export</strong><br />
-      <sub>Daily, monthly, department comparison, punctuality, and overtime analytics with authenticated CSV export.</sub>
+    <td width="50%" valign="top" align="center">
+      <strong>Reports &amp; Statutory CSV Export</strong><br />
+      <sub>Daily, monthly, department &amp; overtime insights with CSV export.</sub>
       <br /><br />
-      <img src="docs/screenshots/09-reports.png" alt="Reports and Analytics" />
+      <img src="docs/screenshots/09-reports.png" alt="Reports and Analytics" width="100%" />
     </td>
   </tr>
   <tr>
-    <td width="68%" align="center">
-      <strong>Organization, Users, Kiosk & Rules Settings</strong><br />
-      <sub>Role-gated administration for company branches, departments, user accounts, kiosk defaults, and rules.</sub>
+    <td width="50%" valign="top" align="center">
+      <strong>Organization, Users &amp; Kiosk Settings</strong><br />
+      <sub>Role-gated branches, departments, user accounts &amp; preferences.</sub>
       <br /><br />
-      <img src="docs/screenshots/10-settings.png" alt="Settings" />
+      <img src="docs/screenshots/10-settings.png" alt="Settings" width="100%" />
     </td>
-    <td width="32%" align="center">
-      <strong>Mobile Responsive</strong><br />
-      <sub>Adaptive drawer navigation and touch-friendly cards.</sub>
+    <td width="50%" valign="top" align="center">
+      <strong>Sign In &amp; Direct Kiosk Access</strong><br />
+      <sub>Clean authentication gate with instant terminal launch.</sub>
       <br /><br />
-      <img src="docs/screenshots/11-mobile-dashboard.png" alt="Mobile Dashboard" width="220" />
+      <img src="docs/screenshots/01-login.png" alt="Login Page" width="100%" />
+    </td>
+  </tr>
+</table>
+
+### Mobile Responsive Experience
+<table>
+  <tr>
+    <td width="33.3%" valign="top" align="center">
+      <strong>Mobile Dashboard</strong><br />
+      <sub>KPIs &amp; quick actions</sub>
+      <br /><br />
+      <img src="docs/screenshots/11-mobile-dashboard.png" alt="Mobile Dashboard" width="230" />
+    </td>
+    <td width="33.3%" valign="top" align="center">
+      <strong>Mobile Attendance</strong><br />
+      <sub>Filters &amp; check-in status</sub>
+      <br /><br />
+      <img src="docs/screenshots/12-mobile-attendance.png" alt="Mobile Attendance" width="230" />
+    </td>
+    <td width="33.3%" valign="top" align="center">
+      <strong>Mobile Regularization</strong><br />
+      <sub>Correction diffs &amp; approvals</sub>
+      <br /><br />
+      <img src="docs/screenshots/13-mobile-regularization.png" alt="Mobile Regularization" width="230" />
     </td>
   </tr>
 </table>

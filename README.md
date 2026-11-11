@@ -43,7 +43,7 @@ Most biometric attendance prototypes look like raw developer consoles—exposing
       <strong>Touchless Live Kiosk</strong><br />
       <sub>Guided oval framing, real-time positioning feedback, audio chime & voice greeting, and hidden supervisor settings.</sub>
       <br /><br />
-      <img src="docs/screenshots/05-kiosk.png" alt="Live Attendance Kiosk" />
+      <img src="docs/screenshots/05-kiosk-live.png" alt="Live Attendance Kiosk" />
     </td>
     <td width="50%" align="center">
       <strong>Sign In & Direct Kiosk Access</strong><br />

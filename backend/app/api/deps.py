@@ -36,14 +36,43 @@ def get_current_user(
     return user
 
 
+def get_user_roles(user: User) -> list[str]:
+    return [r.name for r in user.roles]
+
+
+def is_admin_or_hr(user: User) -> bool:
+    role_names = get_user_roles(user)
+    return bool(user.is_superuser or "ADMIN" in role_names or "HR_MANAGER" in role_names)
+
+
+def is_manager_or_above(user: User) -> bool:
+    role_names = get_user_roles(user)
+    return bool(
+        user.is_superuser
+        or "ADMIN" in role_names
+        or "HR_MANAGER" in role_names
+        or "LINE_MANAGER" in role_names
+    )
+
+
 def get_current_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    role_names = [r.name for r in current_user.roles]
-    if not current_user.is_superuser and "ADMIN" not in role_names and "HR_MANAGER" not in role_names:
+    if not is_admin_or_hr(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user does not have administrative privileges"
+        )
+    return current_user
+
+
+def get_current_manager(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if not is_manager_or_above(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user does not have manager privileges"
         )
     return current_user
 

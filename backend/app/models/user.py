@@ -77,3 +77,11 @@ class AuditLog(Base):
 
     user = relationship("User", back_populates="audit_logs")
 
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    key = Column(String(100), primary_key=True)
+    value = Column(JSON, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+

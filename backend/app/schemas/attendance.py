@@ -49,6 +49,7 @@ class DailyAttendanceOut(BaseModel):
     employee_name: Optional[str] = None
     employee_code: Optional[str] = None
     department_name: Optional[str] = None
+    shift_name: Optional[str] = None
     attendance_date: date
     check_in_time: Optional[datetime] = None
     check_out_time: Optional[datetime] = None
@@ -58,6 +59,7 @@ class DailyAttendanceOut(BaseModel):
     overtime_minutes: int
     status: str
     regularization_status: str
+    remarks: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -68,6 +70,7 @@ class DashboardSummaryOut(BaseModel):
     present_today: int
     absent_today: int
     late_today: int
+    on_leave_today: int = 0
     attendance_percentage: float
     department_stats: List[Dict[str, Any]]
     recent_punches: List[AttendanceLogOut]
@@ -99,6 +102,46 @@ class AuditLogOut(BaseModel):
     old_values: Optional[Dict[str, Any]] = None
     new_values: Optional[Dict[str, Any]] = None
     ip_address: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class RegularizationRequestCreate(BaseModel):
+    employee_id: str
+    attendance_date: date
+    requested_check_in: Optional[datetime] = None
+    requested_check_out: Optional[datetime] = None
+    requested_status: str = "PRESENT"
+    reason: str
+
+
+class RegularizationReviewRequest(BaseModel):
+    status: str  # APPROVED, REJECTED
+    remarks: Optional[str] = None
+
+
+class RegularizationRequestOut(BaseModel):
+    id: str
+    employee_id: str
+    employee_name: Optional[str] = None
+    employee_code: Optional[str] = None
+    department_name: Optional[str] = None
+    daily_attendance_id: Optional[str] = None
+    attendance_date: date
+    original_check_in: Optional[datetime] = None
+    original_check_out: Optional[datetime] = None
+    original_status: Optional[str] = None
+    requested_check_in: Optional[datetime] = None
+    requested_check_out: Optional[datetime] = None
+    requested_status: str
+    reason: str
+    status: str
+    reviewed_by_user_id: Optional[str] = None
+    reviewed_by_name: Optional[str] = None
+    review_remarks: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
     created_at: datetime
 
     class Config:

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.core.database import get_db
-from app.api.deps import get_current_admin, get_optional_admin
+from app.api.deps import get_current_admin, get_current_manager, get_optional_admin
 from app.models import (
     Employee, Department, Branch, Shift, User, FaceTemplate
 )
@@ -28,7 +28,7 @@ def list_employees(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    admin: User = Depends(get_current_admin)
+    admin: User = Depends(get_current_manager)
 ):
     """Lists employees with optional filtering, search, and pagination."""
     query = db.query(Employee)
@@ -184,7 +184,7 @@ def quick_register_and_enroll(
 def get_employee(
     employee_id: str,
     db: Session = Depends(get_db),
-    admin: User = Depends(get_current_admin)
+    admin: User = Depends(get_current_manager)
 ):
     """Retrieves single employee profile by ID."""
     emp = db.query(Employee).filter(Employee.id == employee_id).first()

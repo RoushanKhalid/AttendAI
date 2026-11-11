@@ -1,8 +1,8 @@
 from app.core.database import Base
-from app.models.user import User, Role, Permission, UserRole, RolePermission, AuditLog
+from app.models.user import User, Role, Permission, UserRole, RolePermission, AuditLog, SystemSetting
 from app.models.employee import Organization, Branch, Department, Shift, Employee
 from app.models.biometric import FaceTemplate, BiometricConsent
-from app.models.attendance import AttendanceLog, DailyAttendance, LeaveRequest, Holiday
+from app.models.attendance import AttendanceLog, DailyAttendance, LeaveRequest, Holiday, RegularizationRequest
 
 __all__ = [
     "Base",
@@ -12,6 +12,7 @@ __all__ = [
     "UserRole",
     "RolePermission",
     "AuditLog",
+    "SystemSetting",
     "Organization",
     "Branch",
     "Department",
@@ -23,5 +24,6 @@ __all__ = [
     "DailyAttendance",
     "LeaveRequest",
     "Holiday",
+    "RegularizationRequest",
 ]
 

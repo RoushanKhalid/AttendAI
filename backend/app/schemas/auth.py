@@ -16,6 +16,7 @@ class TokenResponse(BaseModel):
     full_name: Optional[str] = None
     email: str
     roles: List[str]
+    employee_id: Optional[str] = None
 
 
 class UserOut(BaseModel):
@@ -26,6 +27,7 @@ class UserOut(BaseModel):
     is_active: bool
     is_superuser: bool
     roles: List[str]
+    employee_id: Optional[str] = None
 
     class Config:
         from_attributes = True

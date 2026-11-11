@@ -48,11 +48,12 @@ def get_dashboard_summary(
 
     status_counts = {status: count for status, count in daily_records}
     
-    present_count = status_counts.get("PRESENT", 0) + status_counts.get("LATE", 0) + status_counts.get("HALF_DAY", 0)
+    present_count = status_counts.get("PRESENT", 0) + status_counts.get("LATE", 0) + status_counts.get("HALF_DAY", 0) + status_counts.get("EARLY_DEPARTURE", 0)
     late_count = status_counts.get("LATE", 0)
+    on_leave_count = status_counts.get("ON_LEAVE", 0)
     
-    # Absent count is total active employees minus those with present records
-    absent_count = max(0, total_employees - present_count)
+    # Absent count is total active employees minus those present or on approved leave
+    absent_count = max(0, total_employees - present_count - on_leave_count)
     
     attendance_pct = (present_count / total_employees * 100.0) if total_employees > 0 else 0.0
 
@@ -123,6 +124,7 @@ def get_dashboard_summary(
         present_today=present_count,
         absent_today=absent_count,
         late_today=late_count,
+        on_leave_today=on_leave_count,
         attendance_percentage=round(attendance_pct, 1),
         department_stats=dept_stats,
         recent_punches=recent_punches

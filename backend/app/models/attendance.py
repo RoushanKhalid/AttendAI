@@ -79,3 +79,29 @@ class Holiday(Base):
 
     branch = relationship("Branch", back_populates="holidays")
 
+
+class RegularizationRequest(Base):
+    __tablename__ = "regularization_requests"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    employee_id = Column(String(36), ForeignKey("employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    daily_attendance_id = Column(String(36), ForeignKey("daily_attendance.id", ondelete="SET NULL"), nullable=True)
+    attendance_date = Column(Date, nullable=False, index=True)
+
+    original_check_in = Column(DateTime, nullable=True)
+    original_check_out = Column(DateTime, nullable=True)
+    original_status = Column(String(50), nullable=True)
+
+    requested_check_in = Column(DateTime, nullable=True)
+    requested_check_out = Column(DateTime, nullable=True)
+    requested_status = Column(String(50), default="PRESENT", nullable=False)
+    reason = Column(Text, nullable=False)
+
+    status = Column(String(30), default="PENDING", nullable=False, index=True)  # PENDING, APPROVED, REJECTED
+    reviewed_by_user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    review_remarks = Column(Text, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    employee = relationship("Employee")
+

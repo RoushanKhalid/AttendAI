@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.database import get_db
-from app.api.deps import get_current_user, get_current_admin
+from app.api.deps import get_current_user, get_current_admin, get_current_manager, is_manager_or_above
 from app.models.employee import Employee, Department, Shift, Branch
 from app.models.attendance import DailyAttendance, Holiday, LeaveRequest
 from app.models.user import User
@@ -36,7 +36,12 @@ def get_monthly_attendance_summary(
 
     # Fetch employees
     emp_query = db.query(Employee, Department).join(Department, Employee.department_id == Department.id)
-    if department_id:
+    if not is_manager_or_above(current_user):
+        if current_user.employee_id:
+            emp_query = emp_query.filter(Employee.id == current_user.employee_id)
+        else:
+            return MonthlyReportResponse(year=year, month=month, total_employees=0, average_attendance_rate=0.0, summaries=[])
+    elif department_id:
         emp_query = emp_query.filter(Employee.department_id == department_id)
     emp_records = emp_query.order_by(Employee.first_name.asc()).all()
 
@@ -109,7 +114,7 @@ def export_attendance_csv(
     month: int = Query(default=date.today().month, ge=1, le=12),
     department_id: Optional[str] = None,
     db: Session = Depends(get_db),
-    admin: User = Depends(get_current_admin)
+    admin: User = Depends(get_current_manager)
 ):
     """
     Exports full statutory attendance register to CSV format.

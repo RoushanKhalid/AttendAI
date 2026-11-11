@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastmcp.utilities.lifespan import combine_lifespans
 from app.core.config import settings
 from app.core.logging import setup_logging, logger
 from app.core.init_db import init_db
 from app.api import api_router
+from app.mcp import mcp
 
 
 @asynccontextmanager
@@ -20,6 +22,8 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down %s...", settings.PROJECT_NAME)
 
 
+mcp_app = mcp.http_app(path=settings.MCP_PATH)
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
@@ -27,7 +31,7 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc",
-    lifespan=lifespan
+    lifespan=combine_lifespans(lifespan, mcp_app.lifespan),
 )
 
 # CORS Middleware
@@ -50,13 +54,18 @@ def root():
         "version": settings.VERSION,
         "status": "healthy",
         "docs_url": f"{settings.API_V1_STR}/docs",
-        "api_prefix": settings.API_V1_STR
+        "api_prefix": settings.API_V1_STR,
+        "mcp_url": settings.MCP_PATH,
     }
 
 
 @app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "ok", "service": "ai-attendance-core"}
+
+
+# Mount Streamable HTTP MCP endpoint after explicit REST routes
+app.mount("/", mcp_app)
 
 
 if __name__ == "__main__":

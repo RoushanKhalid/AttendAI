@@ -2,19 +2,20 @@
 
 # AttendAI — AI Face Recognition Attendance Platform
 
-**A modern, privacy-first workforce attendance, shift scheduling, leave, and live AI kiosk platform built with Next.js 14, FastAPI, MediaPipe, SFace ONNX, and MiniFASNet V2.**
+**A modern, privacy-first workforce attendance, shift scheduling, leave, live AI kiosk, and FastMCP platform built with Next.js 14, FastAPI, FastMCP, MediaPipe, SFace ONNX, and MiniFASNet V2.**
 
 <p>
   <img src="https://img.shields.io/badge/Next.js-14-000000?style=flat-square&logo=nextdotjs" alt="Next.js 14" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/FastAPI-Python_3.11-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/FastMCP-MCP_Server-111827?style=flat-square" alt="FastMCP" />
   <img src="https://img.shields.io/badge/MediaPipe-FaceLandmarker-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe" />
   <img src="https://img.shields.io/badge/ONNX_Runtime-SFace_%2B_MiniFASNet-005CED?style=flat-square" alt="ONNX Runtime" />
   <img src="https://img.shields.io/badge/PostgreSQL-17_%2F_SQLite-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
 </p>
 
-[Live Screenshots](#-product-tour) • [Key Capabilities](#-key-capabilities) • [Architecture](#-ai--system-architecture) • [Quick Start](#-quick-start) • [Role Permissions](#-role-based-experiences) • [Testing](#-automated-test-suite)
+[Live Screenshots](#-product-tour) • [Key Capabilities](#-key-capabilities) • [Architecture](#-ai--system-architecture) • [Quick Start](#-quick-start) • [FastMCP Server](#-fastmcp-server-model-context-protocol) • [Role Permissions](#-role-based-experiences) • [Testing](#-automated-test-suite)
 
 <br />
 
@@ -162,11 +163,12 @@ flowchart TD
     Debounce --> Engine["Shift & Attendance Rules Engine (Day/Overnight, Grace, OT, Leaves)"]
     Engine --> DB[("PostgreSQL 17 / SQLite Fallback")]
     DB --> UI["Next.js 14 App Router SaaS UI"]
+    DB --> MCP["FastMCP Server (Tools, Resources & Prompts)"]
 ```
 
 ### Technology Stack
 - **Frontend:** Next.js 14 (App Router), React 18, TypeScript 5, Tailwind CSS 3.4, Lucide Icons, Web Audio API, SpeechSynthesis
-- **Backend:** FastAPI, Python 3.11, Pydantic V2, SQLAlchemy 2.0, JWT (`HS256`) + Bcrypt
+- **Backend & MCP:** FastAPI, FastMCP (Streamable HTTP `/mcp` + Stdio), Python 3.11, Pydantic V2, SQLAlchemy 2.0, JWT (`HS256`) + Bcrypt
 - **Computer Vision:** MediaPipe FaceLandmarker Tasks API, OpenCV 4.10 (`face_recognition_sface.onnx`), ONNX Runtime 1.20 (`minifasnet_v2.onnx`), NumPy
 - **Storage & Cache:** PostgreSQL 17 with automatic SQLite fallback (`attendance_dev.db`), Redis with thread-safe in-memory TTL fallback
 
@@ -227,23 +229,68 @@ npm run dev
 - **Web App:** `http://localhost:3000`
 - **Live Kiosk Terminal:** `http://localhost:3000/kiosk`
 - **API Docs (Swagger):** `http://127.0.0.1:8000/api/v1/docs`
+- **MCP Endpoint (Streamable HTTP):** `http://127.0.0.1:8000/mcp`
 - **Default Admin Login:** `admin@company.com` / `admin123`
+
+---
+
+## 🤖 FastMCP Server (Model Context Protocol)
+
+AttendAI includes a built-in **FastMCP** server (`backend/app/mcp/server.py`) exposing curated HR, attendance, shift, leave, holiday, regularization, and reporting **tools**, **resources**, and **prompts** over both **Streamable HTTP** and **Stdio**. See [`docs/MCP_GUIDE.md`](docs/MCP_GUIDE.md) for the complete reference and client examples.
+
+### 1. Streamable HTTP (Mounted on FastAPI)
+
+When the backend server runs on port `8000`, the MCP endpoint is mounted directly at `http://127.0.0.1:8000/mcp`:
+
+```json
+{
+  "mcpServers": {
+    "attendai-http": {
+      "url": "http://127.0.0.1:8000/mcp"
+    }
+  }
+}
+```
+
+### 2. Local Stdio (Standalone Process)
+
+Connect local MCP clients (Antigravity, Claude Desktop, Cursor) via `backend/mcp_server.py`:
+
+```json
+{
+  "mcpServers": {
+    "attendai": {
+      "command": "python",
+      "args": ["/path/to/AttendAI/backend/mcp_server.py", "--transport", "stdio"],
+      "env": {
+        "MCP_DEFAULT_USER_EMAIL": "admin@company.com"
+      }
+    }
+  }
+}
+```
+
+### Authentication & Capabilities
+
+- **Flexible Auth & RBAC:** Protected tools accept an explicit `access_token`, an HTTP `Authorization: Bearer <token>` header, a session login via `auth_login` (persisted across calls in local stdio), or an optional `MCP_DEFAULT_USER_EMAIL` (or `--user` CLI flag) for local stdio sessions. All role scopes (`ADMIN`, `HR_MANAGER`, `LINE_MANAGER`, `EMPLOYEE`) are enforced.
+- **35 Tools, 4 Resources, 2 Prompts:** Full coverage for dashboard KPIs, employee directory, manual punches, regularization & audit logs, shifts, leaves, holidays, monthly reports, statutory CSV export, and organization settings. See [`docs/MCP_GUIDE.md`](docs/MCP_GUIDE.md) for the full list.
 
 ---
 
 ## 🧪 Automated Test Suite
 
-Run the complete automated backend test suite covering API endpoints, computer vision alignment/embeddings/anti-spoofing, security, shifts, leaves, holidays, quick registration, regularization, reports, settings, and role-based access control:
+Run the complete automated backend test suite covering API endpoints, computer vision alignment/embeddings/anti-spoofing, security, shifts, leaves, holidays, quick registration, regularization, reports, settings, FastMCP tools/transports, and role-based access control:
 
 ```powershell
 python -m pytest
 ```
 
-**Test Coverage (21 tests across 9 suites):**
+**Test Coverage (26 tests across 10 suites):**
 - `test_api_endpoints.py` — Health checks, auth login, employee lifecycle, face enrollment & debounce
 - `test_computer_vision.py` — 112x112 alignment, L2 embedding normalization, cosine matching & anti-spoofing
 - `test_database_and_security.py` — Password hashing, JWT tokens, seeded entities, TTL debounce cache
 - `test_leaves_holidays.py` — Branch holiday calendar & leave approval attendance sync
+- `test_mcp_server.py` — FastMCP tools, resources, prompts, flexible auth/RBAC, `/mcp` HTTP & stdio transport
 - `test_quick_register.py` — 1-step camera quick registration & instant kiosk recognition
 - `test_regularization.py` — Admin regularization & immutable audit log trail
 - `test_reports.py` — Monthly aggregation & statutory CSV export

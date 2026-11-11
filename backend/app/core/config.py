@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_PASSWORD: str = "admin123"
     DEFAULT_ADMIN_NAME: str = "System Administrator"
 
+    # Model Context Protocol (MCP)
+    MCP_SERVER_NAME: str = "AttendAI MCP"
+    MCP_PATH: str = "/mcp"
+    MCP_DEFAULT_USER_EMAIL: Optional[str] = None
+    MCP_ALLOW_HTTP_DEFAULT_USER: bool = False
+
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",

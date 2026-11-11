@@ -9,7 +9,6 @@ from app.api.deps import get_current_admin, get_current_manager, get_optional_ad
 from app.models import (
     Employee, Department, Branch, Shift, User, FaceTemplate
 )
-from app.cv.service import cv_service
 from app.schemas.employee import (
     EmployeeCreate, EmployeeUpdate, EmployeeOut,
     DepartmentCreate, DepartmentOut, BranchOut, ShiftOut, ShiftCreate,
@@ -96,6 +95,8 @@ def quick_register_and_enroll(
     5. The employee can immediately face the Kiosk to be identified.
     """
     # 1. Validate Face Image and generate embedding
+    from app.cv.service import cv_service
+
     proc_res = cv_service.process_enrollment_samples([payload.face_image])
     if not proc_res["success"]:
         raise HTTPException(

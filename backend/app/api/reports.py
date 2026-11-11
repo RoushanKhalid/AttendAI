@@ -108,18 +108,13 @@ def get_monthly_attendance_summary(
     )
 
 
-@router.get("/export/csv")
-def export_attendance_csv(
-    year: int = Query(default=date.today().year, ge=2020, le=2100),
-    month: int = Query(default=date.today().month, ge=1, le=12),
+def generate_attendance_csv_text(
+    db: Session,
+    year: int,
+    month: int,
     department_id: Optional[str] = None,
-    db: Session = Depends(get_db),
-    admin: User = Depends(get_current_manager)
-):
-    """
-    Exports full statutory attendance register to CSV format.
-    Compatible with Bangladesh Labour Act 2006 (Form 9 Register) and APPI compliance reports.
-    """
+) -> tuple[str, str, int]:
+    """Builds the statutory attendance CSV content, filename, and data row count."""
     _, last_day = calendar.monthrange(year, month)
     start_date = date(year, month, 1)
     end_date = date(year, month, last_day)
@@ -183,11 +178,28 @@ def export_attendance_csv(
             daily.remarks or ""
         ])
 
-    output.seek(0)
     filename = f"attendance_register_{year}_{month:02d}.csv"
+    return output.getvalue(), filename, len(records)
+
+
+@router.get("/export/csv")
+def export_attendance_csv(
+    year: int = Query(default=date.today().year, ge=2020, le=2100),
+    month: int = Query(default=date.today().month, ge=1, le=12),
+    department_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_manager)
+):
+    """
+    Exports full statutory attendance register to CSV format.
+    Compatible with Bangladesh Labour Act 2006 (Form 9 Register) and APPI compliance reports.
+    """
+    csv_text, filename, _ = generate_attendance_csv_text(
+        db=db, year=year, month=month, department_id=department_id
+    )
 
     return StreamingResponse(
-        iter([output.getvalue()]),
+        iter([csv_text]),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )

@@ -13,7 +13,6 @@ from app.models import (
     Employee, FaceTemplate, AttendanceLog, DailyAttendance, Shift, Department, User, RegularizationRequest
 )
 from app.models.user import AuditLog
-from app.cv.service import cv_service
 from app.services.attendance_engine import attendance_engine
 from app.schemas.attendance import (
     AttendancePunchRequest, AttendancePunchResponse,
@@ -70,6 +69,8 @@ def recognize_and_record(
     }
 
     # 2. Run Computer Vision Pipeline
+    from app.cv.service import cv_service
+
     cv_res = cv_service.recognize_stream_frame(
         payload.image,
         templates_cache,

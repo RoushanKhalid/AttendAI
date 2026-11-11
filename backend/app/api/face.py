@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.api.deps import get_current_admin
 from app.models import Employee, FaceTemplate, User
-from app.cv.service import cv_service
 from app.schemas.face import (
     FaceQualityCheckRequest, FaceQualityCheckResponse,
     FaceEnrollRequest, FaceEnrollResponse
@@ -20,6 +19,8 @@ def check_face_quality(payload: FaceQualityCheckRequest):
     Evaluates a live camera frame during enrollment or kiosk scanning.
     Checks pose angle, blur, illumination, and minimum face size.
     """
+    from app.cv.service import cv_service
+
     res = cv_service.assess_frame(payload.image)
     return FaceQualityCheckResponse(
         success=res["success"],
@@ -51,6 +52,8 @@ def enroll_employee_face(
         raise HTTPException(status_code=400, detail="At least 1 face capture sample is required (3 to 5 recommended)")
 
     # Process samples through CV pipeline
+    from app.cv.service import cv_service
+
     proc_result = cv_service.process_enrollment_samples(payload.samples)
     if not proc_result["success"]:
         raise HTTPException(status_code=422, detail=proc_result["message"])

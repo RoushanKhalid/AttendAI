@@ -145,6 +145,7 @@ Most biometric attendance prototypes look like raw developer consoles—exposing
 | **Regularization & Audit** | Missing punch queue, employee correction requests, side-by-side Original vs. Requested diffs, HR overrides, and tamper-evident audit logs |
 | **Reports & Analytics** | Daily, monthly, department comparison, late/absence, and overtime views plus statutory CSV downloads (Bangladesh Labour Act Form 9 / APPI) |
 | **Settings** | Organization profile, branches, departments, RBAC user/role management, persisted kiosk defaults, and attendance rule preferences |
+| **FastMCP Server** | 35 tools, 4 resources, and 2 prompts over Streamable HTTP (`/mcp`) and `stdio` with JWT/env auth and full RBAC enforcement |
 
 ---
 
@@ -171,6 +172,12 @@ flowchart TD
 - **Backend & MCP:** FastAPI, FastMCP (Streamable HTTP `/mcp` + Stdio), Python 3.11, Pydantic V2, SQLAlchemy 2.0, JWT (`HS256`) + Bcrypt
 - **Computer Vision:** MediaPipe FaceLandmarker Tasks API, OpenCV 4.10 (`face_recognition_sface.onnx`), ONNX Runtime 1.20 (`minifasnet_v2.onnx`), NumPy
 - **Storage & Cache:** PostgreSQL 17 with automatic SQLite fallback (`attendance_dev.db`), Redis with thread-safe in-memory TTL fallback
+
+### Project Structure & Docs
+- `backend/` — FastAPI REST API (`app/api/`), FastMCP server (`app/mcp/`, `mcp_server.py`), CV pipeline (`app/cv/`), rules engine (`app/services/`), SQLAlchemy models (`app/models/`), and automated tests (`tests/`)
+- `frontend/` — Next.js 14 App Router UI, biometric kiosk & enrollment components, and typed API client (`src/lib/api.ts`)
+- `docs/` — Documentation index ([`docs/README.md`](docs/README.md)), [`docs/system-architecture.md`](docs/system-architecture.md), [`docs/mcp-guide.md`](docs/mcp-guide.md), and UI screenshots (`docs/screenshots/`)
+- `start-all.ps1` / `start-backend.ps1` / `start-frontend.ps1` / `stop-all.ps1` — Windows PowerShell service launchers
 
 ---
 
@@ -236,7 +243,7 @@ npm run dev
 
 ## 🤖 FastMCP Server (Model Context Protocol)
 
-AttendAI includes a built-in **FastMCP** server (`backend/app/mcp/server.py`) exposing curated HR, attendance, shift, leave, holiday, regularization, and reporting **tools**, **resources**, and **prompts** over both **Streamable HTTP** and **Stdio**. See [`docs/MCP_GUIDE.md`](docs/MCP_GUIDE.md) for the complete reference and client examples.
+AttendAI includes a built-in **FastMCP** server (`backend/app/mcp/server.py`) exposing curated HR, attendance, shift, leave, holiday, regularization, and reporting **tools**, **resources**, and **prompts** over both **Streamable HTTP** and **Stdio**. See [`docs/mcp-guide.md`](docs/mcp-guide.md) for the complete reference and client examples.
 
 ### 1. Streamable HTTP (Mounted on FastAPI)
 
@@ -273,7 +280,7 @@ Connect local MCP clients (Antigravity, Claude Desktop, Cursor) via `backend/mcp
 ### Authentication & Capabilities
 
 - **Flexible Auth & RBAC:** Protected tools accept an explicit `access_token`, an HTTP `Authorization: Bearer <token>` header, a session login via `auth_login` (persisted across calls in local stdio), or an optional `MCP_DEFAULT_USER_EMAIL` (or `--user` CLI flag) for local stdio sessions. All role scopes (`ADMIN`, `HR_MANAGER`, `LINE_MANAGER`, `EMPLOYEE`) are enforced.
-- **35 Tools, 4 Resources, 2 Prompts:** Full coverage for dashboard KPIs, employee directory, manual punches, regularization & audit logs, shifts, leaves, holidays, monthly reports, statutory CSV export, and organization settings. See [`docs/MCP_GUIDE.md`](docs/MCP_GUIDE.md) for the full list.
+- **35 Tools, 4 Resources, 2 Prompts:** Full coverage for dashboard KPIs, employee directory, manual punches, regularization & audit logs, shifts, leaves, holidays, monthly reports, statutory CSV export, and organization settings. See [`docs/mcp-guide.md`](docs/mcp-guide.md) for the full list.
 
 ---
 
